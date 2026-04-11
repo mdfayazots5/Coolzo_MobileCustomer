@@ -1,16 +1,30 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Calendar, Clock, MapPin, CreditCard, FileText, ChevronRight, MessageSquare } from 'lucide-react';
+import { ChevronLeft, Calendar, Clock, MapPin, CreditCard, FileText, ChevronRight, MessageSquare, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { JOBS, TECHNICIANS } from '@/lib/mockData';
+import { TECHNICIANS } from '@/lib/mockData';
 import { cn } from '@/lib/utils';
+import { BookingService } from '@/services/bookingService';
 
 const BookingDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const job = JOBS.find(j => j.id === id) || JOBS[0];
-  const technician = TECHNICIANS.find(t => t.id === job.technicianId);
+  const [job, setJob] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const technician = job?.technicianId ? TECHNICIANS.find(t => t.id === job.technicianId) : undefined;
+
+  useEffect(() => {
+    if (!id) return;
+    setIsLoading(true);
+    BookingService.getBookingById(id)
+      .then(setJob)
+      .catch((error) => {
+        console.error('Failed to fetch booking detail:', error);
+        setJob(null);
+      })
+      .finally(() => setIsLoading(false));
+  }, [id]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -19,6 +33,23 @@ const BookingDetail = () => {
       default: return 'bg-gold/10 text-gold';
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
+
+  if (!job) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
+        <h2 className="text-2xl font-display font-bold text-navy mb-4">Booking Not Found</h2>
+        <Button onClick={() => navigate('/app/jobs')}>Back to Bookings</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -100,7 +131,7 @@ const BookingDetail = () => {
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-text-secondary mb-1">Service Address</p>
               <p className="text-xs font-bold text-navy leading-relaxed">
-                Coolzo Tech Park, Tower B, Cyber City, Gurugram, 122002
+                {job.address || 'Address unavailable'}
               </p>
             </div>
           </div>
@@ -112,7 +143,7 @@ const BookingDetail = () => {
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-text-secondary mb-1">Payment Method</p>
-                <p className="text-xs font-bold text-navy">UPI • Google Pay</p>
+                <p className="text-xs font-bold text-navy">Pay after service</p>
               </div>
             </div>
             <p className="text-sm font-display font-bold text-navy">₹{job.price}</p>
@@ -131,7 +162,7 @@ const BookingDetail = () => {
             </Button>
           ) : (
             <div className="grid grid-cols-2 gap-4">
-              <Button variant="outline" className="h-14 rounded-2xl border-border text-navy font-bold">
+              <Button variant="outline" className="h-14 rounded-2xl border-border text-navy font-bold" onClick={() => navigate(`/app/reschedule/${job.id}`)}>
                 Reschedule
               </Button>
               <Button variant="outline" className="h-14 rounded-2xl border-red-100 text-red-500 font-bold">
@@ -142,7 +173,7 @@ const BookingDetail = () => {
           <Button 
             variant="ghost" 
             className="w-full h-14 rounded-2xl text-text-secondary font-bold gap-2"
-            onClick={() => navigate('/app/support/new')}
+            onClick={() => navigate('/app/support/new', { state: { srNumber: job.srNumber } })}
           >
             <MessageSquare className="w-5 h-5" />
             Need Help?

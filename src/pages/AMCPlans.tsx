@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { AMCService, AMCPlan } from '@/services/amcService';
 import { useBookingStore } from '@/store/useBookingStore';
 import { cn } from '@/lib/utils';
+import { API_CONFIG } from '@/config/apiConfig';
+import { toast } from 'sonner';
 
 const PlanIcon = ({ name }: { name: string }) => {
   if (name.includes('Basic')) return <ShieldCheck className="w-6 h-6" />;
@@ -37,6 +39,10 @@ export default function AMCPlans() {
   }, []);
 
   const handleBookAMC = (planId: string) => {
+    if (!API_CONFIG.IS_MOCK) {
+      toast.error('AMC enrollment API is not available yet.');
+      return;
+    }
     resetBooking();
     updateBooking({ 
       serviceId: 'amc', 

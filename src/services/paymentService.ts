@@ -1,5 +1,5 @@
 import { API_CONFIG } from '../config/apiConfig';
-import { apiClient } from './apiClient';
+import { apiClient, PagedResult } from './apiClient';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, getDocs, doc, getDoc, query, where, orderBy } from 'firebase/firestore';
 
@@ -15,6 +15,47 @@ export interface Invoice {
   tax: number;
   total: number;
 }
+
+const normalizeInvoiceStatus = (status: string | undefined, balanceAmount = 0): Invoice['status'] => {
+  const value = (status || '').toLowerCase();
+  if (value.includes('paid') || balanceAmount <= 0) return 'Paid';
+  if (value.includes('overdue')) return 'Overdue';
+  return 'Pending';
+};
+
+const mapInvoice = (invoice: any): Invoice => {
+  const balanceAmount = Number(invoice.balanceAmount ?? invoice.grandTotalAmount ?? invoice.amount ?? 0);
+  const grandTotalAmount = Number(invoice.grandTotalAmount ?? invoice.total ?? balanceAmount);
+  const lines = Array.isArray(invoice.lines) ? invoice.lines : [];
+
+  return {
+    id: String(invoice.invoiceId ?? invoice.id),
+    userId: String(invoice.customerId ?? invoice.userId ?? ''),
+    jobId: String(invoice.bookingId ?? invoice.quotationId ?? invoice.quotationNumber ?? invoice.jobId ?? ''),
+    invoiceNumber: invoice.invoiceNumber || `INV-${invoice.invoiceId ?? invoice.id}`,
+    amount: balanceAmount,
+    date: invoice.invoiceDateUtc || invoice.date || new Date().toISOString(),
+    status: normalizeInvoiceStatus(invoice.currentStatus || invoice.status, balanceAmount),
+    items: lines.length > 0
+      ? lines.map((line: any) => ({
+        description: line.description || line.itemDescription || line.serviceName || line.lineDescription || 'Invoice item',
+        amount: Number(line.lineTotalAmount ?? line.amount ?? line.totalAmount ?? 0),
+      }))
+      : [{ description: invoice.serviceName || 'Service invoice', amount: Number(invoice.subTotalAmount ?? grandTotalAmount) }],
+    tax: Number(invoice.taxAmount ?? invoice.tax ?? 0),
+    total: grandTotalAmount,
+  };
+};
+
+const mapPaymentToReceipt = (payment: any, invoiceId: string) => ({
+  invoiceId,
+  receiptNumber: payment.receipt?.receiptNumber || payment.referenceNumber || `REC-${payment.paymentTransactionId ?? invoiceId}`,
+  paymentDate: payment.paymentDateUtc || new Date().toISOString(),
+  paymentMethod: payment.paymentMethod || 'Payment',
+  transactionId: payment.referenceNumber || payment.gatewayTransactionId || String(payment.paymentTransactionId ?? ''),
+  amount: Number(payment.paidAmount ?? 0),
+  raw: payment,
+});
 
 export class PaymentService {
   private static COLLECTION = 'invoices';
@@ -53,7 +94,8 @@ export class PaymentService {
         return [];
       }
     }
-    return apiClient.get<Invoice[]>(`/users/${userId}/invoices`);
+    const result = await apiClient.get<PagedResult<any>>('/invoices/customer', { pageNumber: 1, pageSize: 50 });
+    return result.items.map(mapInvoice);
   }
 
   static async getInvoiceById(id: string): Promise<Invoice | null> {
@@ -71,7 +113,8 @@ export class PaymentService {
         return null;
       }
     }
-    return apiClient.get<Invoice>(`/invoices/${id}`);
+    const invoice = await apiClient.get<any>(`/invoices/${id}`);
+    return mapInvoice(invoice);
   }
 
   static async getReceipt(invoiceId: string): Promise<any> {
@@ -85,13 +128,36 @@ export class PaymentService {
         amount: 499
       };
     }
-    return apiClient.get<any>(`/payments/receipt/${invoiceId}`);
+    const payments = await apiClient.get<any[]>(`/payments/invoice/${invoiceId}`);
+    const latestPayment = payments[0];
+    return latestPayment ? mapPaymentToReceipt(latestPayment, invoiceId) : null;
   }
 
   static async processPayment(data: any): Promise<any> {
-    // Mock payment processing
-    console.log('Processing payment...', data);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    return { status: 'success', transactionId: 'TXN' + Math.random().toString(36).substr(2, 9).toUpperCase() };
+    if (API_CONFIG.IS_MOCK) {
+      console.log('Processing payment...', data);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return { status: 'success', transactionId: 'TXN' + Math.random().toString(36).substr(2, 9).toUpperCase() };
+    }
+
+    const transaction = await apiClient.post<any>('/payments/collect', {
+      invoiceId: Number(data.invoiceId),
+      paidAmount: Number(data.amount),
+      paymentMethod: data.method,
+      referenceNumber: data.referenceNumber,
+      remarks: data.remarks || 'Customer mobile payment',
+      idempotencyKey: `customer-mobile-payment-${data.invoiceId}-${Date.now()}`,
+      gatewayTransactionId: data.gatewayTransactionId,
+      signature: data.signature,
+      expectedInvoiceAmount: Number(data.amount),
+      isWebhookEvent: false,
+      webhookReference: undefined,
+    });
+
+    return {
+      status: 'success',
+      transactionId: transaction.referenceNumber || transaction.paymentTransactionId,
+      raw: transaction,
+    };
   }
 }

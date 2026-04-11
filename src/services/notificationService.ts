@@ -23,6 +23,25 @@ export interface NotificationPreferences {
   updates: boolean;
 }
 
+interface CommunicationPreferenceResponse {
+  emailAddress: string;
+  mobileNumber: string;
+  emailEnabled: boolean;
+  smsEnabled: boolean;
+  whatsAppEnabled: boolean;
+  pushEnabled: boolean;
+  allowPromotionalContent: boolean;
+}
+
+const mapPreferences = (prefs: CommunicationPreferenceResponse): NotificationPreferences => ({
+  push: prefs.pushEnabled,
+  email: prefs.emailEnabled,
+  sms: prefs.smsEnabled,
+  whatsapp: prefs.whatsAppEnabled,
+  offers: prefs.allowPromotionalContent,
+  updates: true,
+});
+
 export class NotificationService {
   private static COLLECTION = 'notifications';
   private static PREFS_COLLECTION = 'notification_preferences';
@@ -42,7 +61,7 @@ export class NotificationService {
         return [];
       }
     }
-    return apiClient.get<Notification[]>(`/users/${userId}/notifications`);
+    return [];
   }
 
   static onNotificationsUpdate(userId: string, callback: (notifications: Notification[]) => void): Unsubscribe {
@@ -59,7 +78,12 @@ export class NotificationService {
         handleFirestoreError(error, OperationType.GET, this.COLLECTION);
       });
     }
-    // For real API, we might use WebSockets or polling, but for now we'll just return a dummy unsubscribe
+    void this.getNotifications(userId)
+      .then(callback)
+      .catch((error) => {
+        console.error('Failed to fetch notifications:', error);
+        callback([]);
+      });
     return () => {};
   }
 
@@ -73,7 +97,7 @@ export class NotificationService {
       }
       return;
     }
-    return apiClient.put(`/notifications/${notificationId}/read`, {});
+    return;
   }
 
   static async getPreferences(userId: string): Promise<NotificationPreferences> {
@@ -89,7 +113,8 @@ export class NotificationService {
         throw error;
       }
     }
-    return apiClient.get<NotificationPreferences>(`/users/${userId}/notifications/preferences`);
+    const prefs = await apiClient.get<CommunicationPreferenceResponse>('/communication-preferences/me');
+    return mapPreferences(prefs);
   }
 
   static async updatePreferences(userId: string, prefs: NotificationPreferences): Promise<void> {
@@ -101,6 +126,12 @@ export class NotificationService {
       }
       return;
     }
-    return apiClient.put(`/users/${userId}/notifications/preferences`, prefs);
+    await apiClient.put<CommunicationPreferenceResponse>('/communication-preferences/me', {
+      emailEnabled: prefs.email,
+      smsEnabled: prefs.sms,
+      whatsAppEnabled: prefs.whatsapp,
+      pushEnabled: prefs.push,
+      allowPromotionalContent: prefs.offers,
+    });
   }
 }

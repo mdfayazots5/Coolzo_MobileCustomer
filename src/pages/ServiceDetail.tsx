@@ -38,6 +38,8 @@ export default function ServiceDetail() {
     resetBooking();
     updateBooking({ 
       serviceId: service.id, 
+      serviceName: service.name,
+      servicePrice: service.price,
       subServiceId: 'General Checkup' 
     });
     setStep(2);

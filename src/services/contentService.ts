@@ -20,6 +20,12 @@ export interface LegalContent {
   lastUpdated: string;
 }
 
+const mapCMSBlockToLegalContent = (block: any): LegalContent => ({
+  title: block.title || block.blockKey || 'Content',
+  content: block.content || block.summary || '',
+  lastUpdated: block.lastUpdated || block.dateCreated || new Date().toISOString(),
+});
+
 export class ContentService {
   private static BLOGS_COLLECTION = 'blogs';
   private static LEGAL_COLLECTION = 'legal';
@@ -34,7 +40,7 @@ export class ContentService {
         return [];
       }
     }
-    return apiClient.get<Blog[]>('/content/blogs');
+    return [];
   }
 
   static async getBlogById(id: string): Promise<Blog | null> {
@@ -47,7 +53,7 @@ export class ContentService {
         return null;
       }
     }
-    return apiClient.get<Blog>(`/content/blogs/${id}`);
+    return null;
   }
 
   static async getLegalContent(type: string): Promise<LegalContent | null> {
@@ -60,7 +66,8 @@ export class ContentService {
         return null;
       }
     }
-    return apiClient.get<LegalContent>(`/content/legal/${type}`);
+    const block = await apiClient.get<any>(`/cms/public/service-content/${encodeURIComponent(type)}`);
+    return mapCMSBlockToLegalContent(block);
   }
 
   static async getAboutContent(): Promise<any> {
@@ -75,15 +82,21 @@ export class ContentService {
         ]
       };
     }
-    return apiClient.get<any>('/content/about');
+    return apiClient.get<any>('/cms/public/home');
   }
 
   static async submitAppFeedback(userId: string, feedback: any): Promise<void> {
+    if (!API_CONFIG.IS_MOCK) {
+      throw new Error('Customer app feedback API is not defined in the current API contract.');
+    }
     console.log('Submitting app feedback:', feedback);
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
 
   static async getChangelog(): Promise<any[]> {
+    if (!API_CONFIG.IS_MOCK) {
+      return [];
+    }
     return [
       { version: '2.4.0', date: '2024-04-01', changes: ['Added AMC Visit Details', 'Improved Job Tracker', 'Bug fixes'] },
       { version: '2.3.5', date: '2024-03-15', changes: ['New Referral System', 'UI enhancements'] }
@@ -91,6 +104,9 @@ export class ContentService {
   }
 
   static async getFAQ(): Promise<any[]> {
+    if (!API_CONFIG.IS_MOCK) {
+      return apiClient.get<any[]>('/cms/public/faqs');
+    }
     return [
       { question: 'How do I book a service?', answer: 'You can book a service from the home dashboard or catalog.' },
       { question: 'What is AMC?', answer: 'AMC stands for Annual Maintenance Contract, which covers regular checkups.' }

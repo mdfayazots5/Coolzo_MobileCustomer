@@ -8,6 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { User, Phone, Mail, FileText, Ticket, Check, Loader2 } from 'lucide-react';
+import { API_CONFIG } from '@/config/apiConfig';
+import { OfferService } from '@/services/offerService';
+import { toast } from 'sonner';
 
 export default function Step5Contact() {
   const { contact, updateContact } = useBookingStore();
@@ -15,13 +18,27 @@ export default function Step5Contact() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponApplied, setCouponApplied] = useState(false);
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
     if (!contact.couponCode) return;
     setCouponLoading(true);
-    setTimeout(() => {
-      setCouponLoading(false);
+    try {
+      if (API_CONFIG.IS_MOCK) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setCouponApplied(true);
+        return;
+      }
+
+      const offer = await OfferService.validateCoupon(contact.couponCode, user?.uid || '');
+      if (!offer) {
+        toast.error('Coupon validation is not available for this code.');
+        return;
+      }
       setCouponApplied(true);
-    }, 1000);
+    } catch (error) {
+      toast.error('Coupon validation failed.');
+    } finally {
+      setCouponLoading(false);
+    }
   };
 
   return (

@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/store/useAuthStore';
 import { AuthService } from '@/services/authService';
+import { API_CONFIG } from '@/config/apiConfig';
 import { toast } from 'sonner';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
@@ -15,6 +16,7 @@ export default function Login() {
   const { setUser } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [credentials, setCredentials] = useState({ userNameOrEmail: '', password: '' });
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
@@ -31,9 +33,25 @@ export default function Login() {
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.info('Email login is currently disabled. Please use Google Login.');
+    if (!credentials.userNameOrEmail || !credentials.password) {
+      toast.error('Enter your email or username and password');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const user = await AuthService.login(credentials.userNameOrEmail, credentials.password);
+      setUser(user);
+      toast.success('Successfully logged in!');
+      navigate('/app');
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to log in');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -50,24 +68,34 @@ export default function Login() {
         <p className="text-navy/60 mb-8">Log in to manage your AC services.</p>
 
         <div className="space-y-6">
-          <Button 
-            onClick={handleGoogleLogin}
-            disabled={isLoading}
-            variant="outline"
-            className="w-full h-14 rounded-xl border-navy/10 text-navy font-bold flex items-center justify-center gap-3 bg-white"
-          >
-            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-            {isLoading ? 'Connecting...' : 'Continue with Google'}
-          </Button>
+          {API_CONFIG.IS_MOCK && (
+            <>
+              <Button 
+                onClick={handleGoogleLogin}
+                disabled={isLoading}
+                variant="outline"
+                className="w-full h-14 rounded-xl border-navy/10 text-navy font-bold flex items-center justify-center gap-3 bg-white"
+              >
+                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+                {isLoading ? 'Connecting...' : 'Continue with Google'}
+              </Button>
 
-          <div className="relative py-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-navy/5"></div>
+              <div className="relative py-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-navy/5"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-warm-white px-2 text-navy/40 font-bold tracking-widest">Or continue with</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {!API_CONFIG.IS_MOCK && (
+            <div className="rounded-2xl bg-navy/5 p-4 text-xs font-medium text-navy/60">
+              Use the email or username password issued for your Coolzo customer account.
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-warm-white px-2 text-navy/40 font-bold tracking-widest">Or continue with</span>
-            </div>
-          </div>
+          )}
 
           <Tabs defaultValue="phone" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-8 bg-navy/5 p-1 rounded-xl">
@@ -95,7 +123,7 @@ export default function Login() {
                   disabled={true}
                   className="w-full h-14 rounded-xl bg-navy text-warm-white hover:bg-navy/90 font-bold opacity-50"
                 >
-                  Send OTP
+                  OTP API Pending
                 </Button>
               </form>
             </TabsContent>
@@ -106,10 +134,11 @@ export default function Login() {
                   <Label htmlFor="email">Email Address</Label>
                   <Input 
                     id="email" 
-                    type="email" 
+                    type="text" 
                     placeholder="name@example.com" 
                     className="h-14 rounded-xl border-navy/10 focus:border-gold focus:ring-gold"
-                    disabled
+                    value={credentials.userNameOrEmail}
+                    onChange={(e) => setCredentials((prev) => ({ ...prev, userNameOrEmail: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-2">
@@ -129,7 +158,8 @@ export default function Login() {
                       type={showPassword ? 'text' : 'password'} 
                       placeholder="••••••••" 
                       className="h-14 rounded-xl border-navy/10 focus:border-gold focus:ring-gold pr-12"
-                      disabled
+                      value={credentials.password}
+                      onChange={(e) => setCredentials((prev) => ({ ...prev, password: e.target.value }))}
                     />
                     <button
                       type="button"
@@ -142,10 +172,10 @@ export default function Login() {
                 </div>
                 <Button 
                   type="submit" 
-                  disabled={true}
-                  className="w-full h-14 rounded-xl bg-navy text-warm-white hover:bg-navy/90 font-bold opacity-50"
+                  disabled={isLoading}
+                  className="w-full h-14 rounded-xl bg-navy text-warm-white hover:bg-navy/90 font-bold"
                 >
-                  Log In
+                  {isLoading ? 'Logging in...' : 'Log In'}
                 </Button>
               </form>
             </TabsContent>

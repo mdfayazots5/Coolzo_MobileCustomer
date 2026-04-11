@@ -1,5 +1,4 @@
 import { API_CONFIG } from '../config/apiConfig';
-import { apiClient } from './apiClient';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, getDocs, query, where, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -33,7 +32,7 @@ export class ReviewService {
         return [];
       }
     }
-    return apiClient.get<Review[]>(`/services/${serviceId}/reviews`);
+    return [];
   }
 
   static async getReviews(serviceType?: string): Promise<Review[]> {
@@ -50,8 +49,7 @@ export class ReviewService {
         return [];
       }
     }
-    const url = serviceType && serviceType !== 'All' ? `/reviews?serviceType=${serviceType}` : '/reviews';
-    return apiClient.get<Review[]>(url);
+    return [];
   }
 
   static async submitReview(userId: string, review: Partial<Review>): Promise<void> {
@@ -67,6 +65,6 @@ export class ReviewService {
       }
       return;
     }
-    return apiClient.post('/reviews', { ...review, userId });
+    throw new Error('Customer review submission API is not defined in the current API contract.');
   }
 }

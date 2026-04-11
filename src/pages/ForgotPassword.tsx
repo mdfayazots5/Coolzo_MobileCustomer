@@ -10,17 +10,17 @@ import { ArrowLeft, MailCheck, Loader2 } from 'lucide-react';
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [loginId, setLoginId] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!loginId) return;
     
     setIsLoading(true);
     try {
-      await AuthService.resetPassword(email);
+      await AuthService.requestPasswordReset(loginId);
       setIsSubmitted(true);
       toast.success('Reset link sent to your email');
       
@@ -53,18 +53,18 @@ export default function ForgotPassword() {
           >
             <div>
               <h1 className="text-3xl font-display font-bold text-navy mb-2">Forgot Password</h1>
-              <p className="text-navy/60">Enter your email to receive a reset link.</p>
+              <p className="text-navy/60">Enter your email or mobile number to start password reset.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email">Email or Mobile Number</Label>
                 <Input 
                   id="email" 
-                  type="email" 
-                  placeholder="name@example.com" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="text" 
+                  placeholder="name@example.com or 9876543210" 
+                  value={loginId}
+                  onChange={(e) => setLoginId(e.target.value)}
                   className="h-14 rounded-xl border-navy/10 focus:border-gold focus:ring-gold"
                   required
                 />
@@ -89,7 +89,7 @@ export default function ForgotPassword() {
             </div>
             <h2 className="text-2xl font-display font-bold text-navy">Check your email</h2>
             <p className="text-navy/60 max-w-xs mx-auto">
-              We've sent a password reset link to your email address.
+              We've sent the reset instructions for the account you entered.
             </p>
             <div className="pt-8">
               <Button 

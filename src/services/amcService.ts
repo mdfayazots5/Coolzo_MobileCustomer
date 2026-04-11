@@ -1,5 +1,5 @@
 import { API_CONFIG } from '../config/apiConfig';
-import { apiClient } from './apiClient';
+import { apiClient, PagedResult } from './apiClient';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
 
@@ -12,6 +12,7 @@ export interface AMCPlan {
   features: string[];
   category: string;
   image: string;
+  recommended?: boolean;
 }
 
 export interface AMCSubscription {
@@ -24,7 +25,61 @@ export interface AMCSubscription {
   status: 'Active' | 'Expired' | 'Cancelled';
   remainingVisits: number;
   totalVisits: number;
+  nextVisitDate?: string | null;
+  visits?: any[];
 }
+
+const mapPlan = (plan: any, index = 0): AMCPlan => {
+  const durationInMonths = Number(plan.durationInMonths ?? 12);
+  const visitCount = Number(plan.visitCount ?? 0);
+  const terms = plan.termsAndConditions ? [plan.termsAndConditions] : [];
+
+  return {
+    id: String(plan.amcPlanId ?? plan.id),
+    name: plan.planName || plan.name || 'AMC Plan',
+    price: Number(plan.priceAmount ?? plan.price ?? 0),
+    duration: durationInMonths >= 12 ? '1 Year' : `${durationInMonths} Months`,
+    description: plan.planDescription || plan.description || '',
+    features: [
+      `${visitCount} preventive visits`,
+      ...terms,
+    ].filter(Boolean),
+    category: 'Annual Maintenance',
+    image: plan.image || 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&q=80&w=400',
+    recommended: index === 1,
+  };
+};
+
+const normalizeSubscriptionStatus = (status: string | undefined): AMCSubscription['status'] => {
+  const value = (status || 'Active').toLowerCase();
+  if (value.includes('cancel')) return 'Cancelled';
+  if (value.includes('expire') || value.includes('inactive')) return 'Expired';
+  return 'Active';
+};
+
+const mapSubscription = (subscription: any): AMCSubscription => {
+  const visits = Array.isArray(subscription.visits) ? subscription.visits : [];
+  const nextVisit = visits.find((visit: any) => {
+    const visitDate = visit.visitDateUtc || visit.scheduledDateUtc || visit.visitDate;
+    return visitDate && new Date(visitDate).getTime() >= Date.now();
+  }) || visits[0];
+  const totalVisits = Math.max(Number(subscription.totalVisitCount ?? subscription.totalVisits ?? visits.length), 1);
+  const consumedVisits = Number(subscription.consumedVisitCount ?? 0);
+
+  return {
+    id: String(subscription.customerAmcId ?? subscription.id),
+    userId: String(subscription.customerId ?? subscription.userId ?? ''),
+    planId: String(subscription.amcPlanId ?? subscription.planId ?? ''),
+    planName: subscription.planName || 'AMC Plan',
+    startDate: subscription.startDateUtc || subscription.startDate || new Date().toISOString(),
+    expiryDate: subscription.endDateUtc || subscription.expiryDate || new Date().toISOString(),
+    status: normalizeSubscriptionStatus(subscription.currentStatus || subscription.status),
+    remainingVisits: Math.max(totalVisits - consumedVisits, 0),
+    totalVisits,
+    nextVisitDate: nextVisit?.visitDateUtc || nextVisit?.scheduledDateUtc || nextVisit?.visitDate || null,
+    visits,
+  };
+};
 
 export class AMCService {
   private static COLLECTION = 'amc_plans';
@@ -67,7 +122,8 @@ export class AMCService {
         return [];
       }
     }
-    return apiClient.get<AMCPlan[]>('/amc/plans');
+    const result = await apiClient.get<PagedResult<any>>('/amc/plans', { isActive: true, pageNumber: 1, pageSize: 50 });
+    return result.items.map(mapPlan);
   }
 
   static async getPlanById(id: string): Promise<AMCPlan | null> {
@@ -85,7 +141,8 @@ export class AMCService {
         return null;
       }
     }
-    return apiClient.get<AMCPlan>(`/amc/plans/${id}`);
+    const plans = await this.getPlans();
+    return plans.find((plan) => plan.id === id) || null;
   }
 
   static async getSubscription(userId: string): Promise<AMCSubscription | null> {
@@ -100,7 +157,9 @@ export class AMCService {
         return null;
       }
     }
-    return apiClient.get<AMCSubscription>(`/users/${userId}/amc/subscription`);
+    const subscriptions = await apiClient.get<any[]>('/amc/customer/me');
+    const activeSubscription = subscriptions.find((item) => normalizeSubscriptionStatus(item.currentStatus || item.status) === 'Active') || subscriptions[0];
+    return activeSubscription ? mapSubscription(activeSubscription) : null;
   }
 
   static async getVisitDetail(visitId: string): Promise<any> {
@@ -124,6 +183,8 @@ export class AMCService {
         return null;
       }
     }
-    return apiClient.get<any>(`/amc/visits/${visitId}`);
+    const subscriptions = await apiClient.get<any[]>('/amc/customer/me');
+    const visits = subscriptions.flatMap((subscription) => subscription.visits || []);
+    return visits.find((visit) => String(visit.amcVisitScheduleId ?? visit.id) === visitId) || null;
   }
 }

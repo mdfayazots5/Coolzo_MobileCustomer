@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useBookingStore } from '@/store/useBookingStore';
 import { cn } from '@/lib/utils';
@@ -11,21 +11,55 @@ import {
   Zap, 
   AlertTriangle,
   ChevronRight,
-  Check
+  Check,
+  Loader2
 } from 'lucide-react';
 import { format, addDays, isSameDay } from 'date-fns';
+import { API_CONFIG } from '@/config/apiConfig';
+import { CatalogService, SlotAvailability } from '@/services/catalogService';
 
 export default function Step4DateTime() {
-  const { slot, updateSlot } = useBookingStore();
+  const { location, slot, updateSlot } = useBookingStore();
+  const [slots, setSlots] = useState<SlotAvailability[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState('');
 
   // Generate next 7 days
   const next7Days = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i));
 
-  const timeWindows = [
-    { id: 'Morning', label: 'Morning', range: '8 AM - 12 PM', icon: Clock },
-    { id: 'Afternoon', label: 'Afternoon', range: '12 PM - 4 PM', icon: Clock },
-    { id: 'Evening', label: 'Evening', range: '4 PM - 7 PM', icon: Clock },
-  ] as const;
+  useEffect(() => {
+    if (!API_CONFIG.IS_MOCK && slot.isEmergency) {
+      updateSlot({ isEmergency: false });
+    }
+  }, [slot.isEmergency, updateSlot]);
+
+  useEffect(() => {
+    if (slot.isEmergency || !slot.date || !location.zoneId) {
+      setSlots([]);
+      setSlotsError('');
+      return;
+    }
+
+    let isMounted = true;
+    setSlotsLoading(true);
+    CatalogService.getSlots(Number(location.zoneId), format(new Date(slot.date), 'yyyy-MM-dd'))
+      .then((data) => {
+        if (!isMounted) return;
+        setSlots(data.filter((item) => item.isAvailable));
+        setSlotsError('');
+      })
+      .catch((error) => {
+        console.error('Failed to load booking slots:', error);
+        if (isMounted) setSlotsError('Slots could not be loaded for this date.');
+      })
+      .finally(() => {
+        if (isMounted) setSlotsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [location.zoneId, slot.date, slot.isEmergency]);
 
   return (
     <div className="space-y-10">
@@ -56,10 +90,16 @@ export default function Step4DateTime() {
           </div>
           <Switch 
             checked={slot.isEmergency}
-            onCheckedChange={(checked) => updateSlot({ isEmergency: checked })}
+            disabled={!API_CONFIG.IS_MOCK}
+            onCheckedChange={(checked) => updateSlot({ isEmergency: checked, slotAvailabilityId: null, timeWindow: null, slotLabel: '' })}
             className="data-[state=checked]:bg-red-500"
           />
         </div>
+        {!API_CONFIG.IS_MOCK && (
+          <p className="mt-4 text-[10px] font-bold uppercase tracking-widest text-navy/40">
+            Emergency booking API is pending.
+          </p>
+        )}
         {slot.isEmergency && (
           <motion.div 
             initial={{ height: 0, opacity: 0 }}
@@ -91,7 +131,12 @@ export default function Step4DateTime() {
                 return (
                   <button
                     key={i}
-                    onClick={() => updateSlot({ date: date.toISOString() })}
+                    onClick={() => updateSlot({
+                      date: date.toISOString(),
+                      timeWindow: null,
+                      slotAvailabilityId: null,
+                      slotLabel: '',
+                    })}
                     className={cn(
                       "snap-center shrink-0 w-20 h-24 rounded-[24px] border-2 flex flex-col items-center justify-center gap-1 transition-all",
                       isSelected 
@@ -114,14 +159,38 @@ export default function Step4DateTime() {
               animate={{ opacity: 1, y: 0 }}
             >
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mb-4 px-2">Select Time Window</h3>
+              {!location.zoneId && (
+                <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-xs font-bold text-amber-700">
+                  Enter a serviceable PIN code before selecting a slot.
+                </div>
+              )}
+              {slotsLoading && (
+                <div className="flex items-center justify-center py-8 text-gold">
+                  <Loader2 className="w-7 h-7 animate-spin" />
+                </div>
+              )}
+              {!slotsLoading && slotsError && (
+                <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-xs font-bold text-red-600">
+                  {slotsError}
+                </div>
+              )}
+              {!slotsLoading && !slotsError && location.zoneId && slots.length === 0 && (
+                <div className="rounded-2xl border border-navy/5 bg-white p-4 text-xs font-bold text-navy/40">
+                  No slots are available for this date.
+                </div>
+              )}
               <div className="space-y-3">
-                {timeWindows.map((window) => (
+                {slots.map((window) => (
                   <button
-                    key={window.id}
-                    onClick={() => updateSlot({ timeWindow: window.id })}
+                    key={window.slotAvailabilityId}
+                    onClick={() => updateSlot({
+                      timeWindow: window.slotLabel,
+                      slotLabel: window.slotLabel,
+                      slotAvailabilityId: window.slotAvailabilityId,
+                    })}
                     className={cn(
                       "w-full p-5 rounded-3xl border-2 flex items-center justify-between transition-all",
-                      slot.timeWindow === window.id 
+                      slot.slotAvailabilityId === window.slotAvailabilityId
                         ? "border-gold bg-gold/5 text-navy" 
                         : "border-navy/5 bg-white text-navy/60 hover:border-navy/10"
                     )}
@@ -129,16 +198,16 @@ export default function Step4DateTime() {
                     <div className="flex items-center gap-4">
                       <div className={cn(
                         "w-10 h-10 rounded-xl flex items-center justify-center",
-                        slot.timeWindow === window.id ? "bg-gold text-navy" : "bg-navy/5 text-navy/40"
+                        slot.slotAvailabilityId === window.slotAvailabilityId ? "bg-gold text-navy" : "bg-navy/5 text-navy/40"
                       )}>
-                        <window.icon className="w-5 h-5" />
+                        <Clock className="w-5 h-5" />
                       </div>
                       <div className="text-left">
-                        <p className="font-bold text-sm">{window.label}</p>
-                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">{window.range}</p>
+                        <p className="font-bold text-sm">{window.slotLabel}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">{window.startTime} - {window.endTime}</p>
                       </div>
                     </div>
-                    {slot.timeWindow === window.id ? (
+                    {slot.slotAvailabilityId === window.slotAvailabilityId ? (
                       <Check className="w-5 h-5 text-gold" />
                     ) : (
                       <ChevronRight className="w-4 h-4 opacity-20" />

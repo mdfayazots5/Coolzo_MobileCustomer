@@ -1,14 +1,38 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Check, ChevronRight } from 'lucide-react';
-import { SERVICES } from '@/lib/mockData';
+import { AlertCircle, Check, ChevronRight, Loader2 } from 'lucide-react';
 import { useBookingStore } from '@/store/useBookingStore';
 import { cn } from '@/lib/utils';
+import { CatalogService, CatalogServiceItem } from '@/services/catalogService';
 
 export default function Step1Service() {
   const { serviceId, subServiceId, updateBooking } = useBookingStore();
+  const [services, setServices] = useState<CatalogServiceItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const selectedService = SERVICES.find(s => s.id === serviceId);
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
+    CatalogService.getServices()
+      .then((data) => {
+        if (!isMounted) return;
+        setServices(data);
+        setError('');
+      })
+      .catch((err) => {
+        console.error('Failed to load services:', err);
+        if (isMounted) setError('Services could not be loaded. Please retry.');
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const selectedService = services.find(s => s.id === serviceId);
 
   return (
     <div className="space-y-8">
@@ -17,12 +41,37 @@ export default function Step1Service() {
         <p className="text-navy/60 text-sm">Select a service category to begin.</p>
       </div>
 
+      {isLoading && (
+        <div className="flex items-center justify-center py-12 text-gold">
+          <Loader2 className="w-8 h-8 animate-spin" />
+        </div>
+      )}
+
+      {!isLoading && error && (
+        <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600 flex items-center gap-3">
+          <AlertCircle className="w-4 h-4" />
+          {error}
+        </div>
+      )}
+
+      {!isLoading && !error && services.length === 0 && (
+        <div className="rounded-2xl border border-navy/5 bg-white p-6 text-center text-sm font-bold text-navy/40">
+          No services are available right now.
+        </div>
+      )}
+
+      {!isLoading && !error && services.length > 0 && (
       <div className="grid grid-cols-2 gap-4">
-        {SERVICES.map((service) => (
+        {services.map((service) => (
           <motion.button
             key={service.id}
             whileTap={{ scale: 0.95 }}
-            onClick={() => updateBooking({ serviceId: service.id, subServiceId: null })}
+            onClick={() => updateBooking({
+              serviceId: service.id,
+              serviceName: service.name,
+              servicePrice: service.price,
+              subServiceId: null,
+            })}
             className={cn(
               "p-4 rounded-[24px] border-2 text-left transition-all duration-300 flex flex-col gap-3 relative overflow-hidden",
               serviceId === service.id 
@@ -52,6 +101,7 @@ export default function Step1Service() {
           </motion.button>
         ))}
       </div>
+      )}
 
       {selectedService && (
         <motion.div 

@@ -1,199 +1,112 @@
-# Coolzo Customer App - API Integration Progress
+# Customer App API Progress
 
-This document tracks the progress of API integration for the top 10 priority screens.
+Last updated: 2026-04-11
 
-## Strategy
-- **Base API Configuration:** Centralized in `src/config/apiConfig.ts`.
-- **API Client:** Generic client in `src/services/apiClient.ts`.
-- **Service Layer:** Domain-specific services in `src/services/`.
-- **Mock Toggle:** `IS_MOCK` flag in `apiConfig.ts` allows switching between mock and real APIs.
+Source of truth:
+- API contract: `Coolzo_API_Integration_Master.md`
+- App path: `Mobile/Coolzo_MobileCustomer`
+- Mock mode remains available with `VITE_USE_MOCK_API=true`. Real API mode is enabled with `VITE_USE_MOCK_API=false` and `VITE_API_BASE_URL`.
 
-## Top 10 Priority Screens
+## Current Batch
 
-| Screen | Status | API Service | Methods Used |
-| :--- | :--- | :--- | :--- |
-| 1. Login | ✅ Completed | `AuthService` | `loginWithGoogle` |
-| 2. Register | ✅ Completed | `AuthService` | `setUser` (Mock OTP) |
-| 3. Home Dashboard | ✅ Completed | `BookingService` | `getLiveJobs` |
-| 4. Service Catalog | ✅ Completed | `CatalogService` | `getServices` |
-| 5. Service Detail | ✅ Completed | `CatalogService` | `getServiceById` |
-| 6. Booking Wizard | ✅ Completed | `BookingService` | `createBooking` |
-| 7. Booking Confirmation | ✅ Completed | N/A | Static / State-driven |
-| 8. My Bookings (List) | ✅ Completed | `BookingService` | `getLiveJobs` |
-| 9. Booking Detail / Job Tracker | ✅ Completed | `BookingService` | `onBookingUpdate` |
-| 10. Profile Screen | ✅ Completed | `AuthService` | `updateProfile` |
+Batch: 2026-04-11 customer real API integration pass
 
-## Batch 2 Priority Screens (Next 10)
+Status: Core available APIs integrated; missing/non-contract surfaces are tracked in `Docs/CustomerApp_API_Integration_Issues.md`.
 
-| Screen | Status | API Service | Methods Used |
-| :--- | :--- | :--- | :--- |
-| 11. AMC Plans List | ✅ Completed | `AMCService` | `getPlans` |
-| 12. AMC Plan Detail | ✅ Completed | `AMCService` | `getPlanById` |
-| 13. Address Book | ✅ Completed | `AddressService` | `getAddresses` |
-| 14. Add/Edit Address | ✅ Completed | `AddressService` | `saveAddress` |
-| 15. Equipment List | ✅ Completed | `EquipmentService` | `getEquipment` |
-| 16. Add/Edit Equipment | ✅ Completed | `EquipmentService` | `saveEquipment` |
-| 17. Notification Centre | ✅ Completed | `NotificationService` | `onNotificationsUpdate` |
-| 18. Invoices List | ✅ Completed | `PaymentService` | `getInvoices` |
-| 19. Support Tickets List | ✅ Completed | `SupportService` | `getTickets` |
-| 20. Support Ticket Detail | ✅ Completed | `SupportService` | `onTicketUpdate` |
+Validation:
+- `npm ci` completed successfully because `node_modules` was missing.
+- `npm run lint` passed.
+- `npm run build` passed.
+- Build warning: Vite reports a large JS chunk above 500 kB; no functional build failure.
 
-## Batch 3 Priority Screens (Next 10)
+## Integrated Screens And Services
 
-| Screen | Status | API Service | Methods Used |
-| :--- | :--- | :--- | :--- |
-| 21. Global Search | ✅ Completed | `CatalogService` | `searchServices` |
-| 22. Promotional Offers | ✅ Completed | `OfferService` | `getOffers` |
-| 23. Refer & Earn | ✅ Completed | `ReferralService` | `getReferralStats` |
-| 24. Loyalty Rewards | ✅ Completed | `LoyaltyService` | `getLoyaltyPoints`, `getTransactions` |
-| 25. Technician Profile | ✅ Completed | `TechnicianService` | `getTechnicianById` |
-| 26. Review Submission | ✅ Completed | `ReviewService` | `submitReview` |
-| 27. Service Reviews | ✅ Completed | `ReviewService` | `getReviews` |
-| 28. Invoice Detail | ✅ Completed | `PaymentService` | `getInvoiceById` |
-| 29. AMC Dashboard | ✅ Completed | `AMCService` | `getSubscription` |
-| 30. Notification Prefs | ✅ Completed | `NotificationService` | `getPreferences`, `updatePreferences` |
+| Module | Screens / Services | Status | API routes connected |
+| --- | --- | --- | --- |
+| Shared API foundation | `apiConfig.ts`, `apiClient.ts` | Integrated | Envelope unwrap, bearer auth, refresh token via `/auth/refresh`, query params, API errors |
+| Auth | Login, Register, Forgot Password, Reset Password, Change Password | Partially integrated | `/auth/login`, `/auth/me`, `/customer-auth/register`, `/customer-auth/forgot-password`, `/customer-auth/reset-password`, `/customer-auth/change-password` |
+| Catalog / booking lookups | Service Catalog, Service Detail, Search, Booking step 1-4 | Integrated | `/booking-lookups/services`, `/booking-lookups/ac-types`, `/booking-lookups/brands`, `/booking-lookups/tonnage`, `/booking-lookups/zones/by-pincode/{pincode}`, `/booking-lookups/slots` |
+| Booking create/history | Booking Wizard, Booking Confirmation, My Jobs, Booking Detail, Job Tracker, Service Report | Partially integrated | `/bookings/customer`, `/customer-bookings`, `/customer-bookings/{bookingId}` |
+| Billing and payments | Invoices, Invoice Detail, Payment Gateway, Receipt View | Integrated with receipt limitation | `/invoices/customer`, `/invoices/{id}`, `/payments/collect`, `/payments/invoice/{invoiceId}` |
+| Support | Support Tickets, Raise Ticket, Ticket Detail | Integrated | `/support-ticket-lookups/categories`, `/support-ticket-lookups/priorities`, `/support-tickets/my-tickets`, `/support-tickets`, `/support-tickets/{supportTicketId}`, `/support-tickets/{supportTicketId}/replies` |
+| Notification preferences | Notification Preferences | Integrated | `/communication-preferences/me` GET/PUT |
+| AMC | AMC Plans, AMC Plan Detail, AMC Dashboard, AMC Visit Detail | Partially integrated | `/amc/plans`, `/amc/customer/me` |
+| CMS content | FAQ, About, Legal/Service content | Partially integrated | `/cms/public/home`, `/cms/public/faqs`, `/cms/public/service-content/{key}` |
 
-## Batch 4 Priority Screens (Completed)
+## Blocked Or Non-Contract Surfaces
 
-| Screen | Status | API Service | Methods Used |
-| :--- | :--- | :--- | :--- |
-| 31. AMC Visit Detail | ✅ Completed | `AMCService` | `getVisitDetail` |
-| 32. Service Report | ✅ Completed | `BookingService` | `getServiceReport` |
-| 33. About Us | ✅ Completed | `ContentService` | `getAboutContent` |
-| 34. Legal Content | ✅ Completed | `ContentService` | `getLegalContent` |
-| 35. Delete Account | ✅ Completed | `AuthService` | `deleteAccount` |
-| 36. Blog List | ✅ Completed | `ContentService` | `getBlogs` |
-| 37. Blog Detail | ✅ Completed | `ContentService` | `getBlogById` |
-| 38. Emergency Booking | ✅ Completed | `BookingService` | `createEmergencyBooking` |
-| 39. Estimate Approval | ✅ Completed | `BookingService` | `approveEstimate` |
-| 40. Receipt View | ✅ Completed | `PaymentService` | `getReceipt` |
+These are intentionally not wired to guessed endpoints. Details are in `Docs/CustomerApp_API_Integration_Issues.md`.
 
-## Batch 5: Support, Settings & Utilities (Completed)
+| Module | Screens / Services | Status |
+| --- | --- | --- |
+| Auth | Google login, phone OTP login/register | API Missing |
+| Customer account | Profile update, delete account | API Missing |
+| Address book | Addresses, Add/Edit Address | API Missing |
+| Equipment | Equipment List, Equipment Detail, Add/Edit Equipment | API Missing |
+| Booking | Emergency booking, reschedule, draft sync, dedicated service report | API Missing |
+| Estimates | Estimate approval UI needs real numeric `quotationId` from booking detail | Request Mismatch |
+| Billing | Download/share PDF receipt | API Missing |
+| Notifications | Notification list and mark-read | API Missing |
+| Support | Attachments and linked entity schema from customer UI | Contract gap |
+| AMC | Customer enrollment/purchase/renewal, dedicated plan detail, direct visit detail | API Missing |
+| Marketing/rewards | Offers, coupon validation, referral, loyalty, reviews, blog/changelog/app feedback | API Missing |
+| Technician profile | Customer-facing technician detail | API Missing |
 
-| Screen | Status | API Service | Methods Used |
-| :--- | :--- | :--- | :--- |
-| 41. Raise Ticket | ✅ Completed | `SupportService` | `createTicket` |
-| 42. Contact Support | ✅ Completed | `SupportService` | `createTicket` |
-| 43. Change Password | ✅ Completed | `AuthService` | `changePassword` |
-| 44. Forgot Password | ✅ Completed | `AuthService` | `resetPassword` |
-| 45. Reschedule Booking | ✅ Completed | `BookingService` | `rescheduleBooking` |
-| 46. Payment Gateway | ✅ Completed | `PaymentService` | `processPayment` |
-| 47. App Rating Prompt | ✅ Completed | `ContentService` | `submitAppFeedback` |
-| 48. Permissions Mgmt | ✅ Completed | `AuthService` | `updateProfile` |
-| 49. Changelog | ✅ Completed | `ContentService` | `getChangelog` |
-| 50. Booking Drafts | ✅ Completed | `BookingService` | `getDrafts` |
+## Files Changed In This Batch
 
-## API Details
+Config/client:
+- `src/config/apiConfig.ts`
+- `src/services/apiClient.ts`
+- `.env.example`
 
-### AuthService
-- **`loginWithGoogle()`**
-  - **Request:** Google Auth Popup
-  - **Response:** `UserProfile` object
-  - **Firestore:** `users/{uid}`
-- **`updateProfile(uid, data)`**
-  - **Request:** `{ name?: string, phone?: string }`
-  - **Response:** `void`
-  - **Firestore:** `users/{uid}` (Update)
+Services:
+- `src/services/authService.ts`
+- `src/services/catalogService.ts`
+- `src/services/bookingService.ts`
+- `src/services/paymentService.ts`
+- `src/services/supportService.ts`
+- `src/services/notificationService.ts`
+- `src/services/amcService.ts`
+- `src/services/contentService.ts`
+- `src/services/addressService.ts`
+- `src/services/equipmentService.ts`
+- `src/services/offerService.ts`
+- `src/services/referralService.ts`
+- `src/services/loyaltyService.ts`
+- `src/services/reviewService.ts`
+- `src/services/technicianService.ts`
 
-### BookingService
-- **`createBooking(data)`**
-  - **Request:** `BookingData` object
-  - **Response:** `void`
-  - **Firestore:** `jobs/` (Add)
-- **`getLiveJobs(userId, callback)`**
-  - **Request:** `userId`
-  - **Response:** Real-time stream of `Job[]`
-  - **Firestore:** `jobs` (Query where `userId == userId`)
-- **`onBookingUpdate(jobId, callback)`**
-  - **Request:** `jobId`
-  - **Response:** Real-time stream of `Job`
-  - **Firestore:** `jobs/{jobId}`
+Store and UI:
+- `src/store/useBookingStore.ts`
+- `src/pages/Login.tsx`
+- `src/pages/Register.tsx`
+- `src/pages/ForgotPassword.tsx`
+- `src/pages/ResetPassword.tsx`
+- `src/pages/BookingWizard.tsx`
+- `src/pages/BookingConfirmation.tsx`
+- `src/pages/MyJobs.tsx`
+- `src/pages/BookingDetail.tsx`
+- `src/pages/JobTracker.tsx`
+- `src/pages/AMCPlans.tsx`
+- `src/pages/AMCPlanDetail.tsx`
+- `src/pages/ServiceDetail.tsx`
+- `src/pages/RaiseTicket.tsx`
+- `src/pages/TicketDetail.tsx`
+- `src/components/booking/Step1Service.tsx`
+- `src/components/booking/Step2Equipment.tsx`
+- `src/components/booking/Step3Location.tsx`
+- `src/components/booking/Step4DateTime.tsx`
+- `src/components/booking/Step5Contact.tsx`
+- `src/components/booking/Step6Summary.tsx`
 
-### CatalogService
-- **`getServices()`**
-  - **Request:** None
-  - **Response:** `Service[]` (Currently Mock)
-- **`getServiceById(id)`**
-  - **Request:** `id`
-  - **Response:** `Service` (Currently Mock)
+Docs:
+- `Docs/CustomerApp_API_Progress.md`
+- `Docs/CustomerApp_API_Integration_Issues.md`
 
-### AMCService
-- **`getPlans()`**
-  - **Request:** None
-  - **Response:** `AMCPlan[]`
-- **`getPlanById(id)`**
-  - **Request:** `id`
-  - **Response:** `AMCPlan`
+## Next Recommended Batch
 
-### AddressService
-- **`getAddresses(userId)`**
-  - **Request:** `userId`
-  - **Response:** `Address[]`
-- **`saveAddress(userId, data)`**
-  - **Request:** `Address` object
-  - **Response:** `void`
-
-### EquipmentService
-- **`getEquipment(userId)`**
-  - **Request:** `userId`
-  - **Response:** `Equipment[]`
-- **`saveEquipment(userId, data)`**
-  - **Request:** `Equipment` object
-  - **Response:** `void`
-
-### NotificationService
-- **`onNotificationsUpdate(userId, callback)`**
-  - **Request:** `userId`
-  - **Response:** Real-time stream of `Notification[]`
-
-### PaymentService
-- **`getInvoices(userId)`**
-  - **Request:** `userId`
-  - **Response:** `Invoice[]`
-
-### SupportService
-- **`getTickets(userId)`**
-  - **Request:** `userId`
-  - **Response:** `SupportTicket[]`
-- **`onTicketUpdate(id, callback)`**
-  - **Request:** `id`
-  - **Response:** Real-time stream of `SupportTicket`
-
-### OfferService
-- **`getOffers()`**
-  - **Request:** None
-  - **Response:** `Offer[]`
-- **`validateCoupon(code)`**
-  - **Request:** `code`
-  - **Response:** `Offer`
-
-### ReferralService
-- **`getReferralStats(userId)`**
-  - **Request:** `userId`
-  - **Response:** `ReferralStats`
-
-### LoyaltyService
-- **`getLoyaltyPoints(userId)`**
-  - **Request:** `userId`
-  - **Response:** `LoyaltyPoints`
-- **`getTransactions(userId)`**
-  - **Request:** `userId`
-  - **Response:** `LoyaltyTransaction[]`
-
-### TechnicianService
-- **`getTechnicianById(id)`**
-  - **Request:** `id`
-  - **Response:** `Technician`
-
-### ReviewService
-- **`getReviews(serviceType?)`**
-  - **Request:** `serviceType` (optional)
-  - **Response:** `Review[]`
-- **`submitReview(userId, review)`**
-  - **Request:** `userId`, `Review` object
-  - **Response:** `void`
-
-## Next Steps
-- [ ] Implement real backend APIs for `CatalogService`.
-- [ ] Implement real OTP verification in `AuthService`.
-- [ ] Start Batch 6 integration (Final Polish, Remaining Screens).
+1. Backend/API: decide and add missing customer APIs for OTP, profile update, address book, equipment, emergency/reschedule booking, AMC enrollment, notifications, coupons/offers, loyalty/referrals/reviews, and technician profile.
+2. UI: wire backend-provided `quotationId` into Estimate Approval instead of mock `est-123`.
+3. UI: add receipt/PDF download once an invoice/receipt document endpoint exists.
+4. UI: add support ticket attachments and linked booking IDs after the link/attachment contract is confirmed.
+5. Performance: split large app chunks after API correctness work is complete.

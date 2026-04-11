@@ -1,5 +1,4 @@
 import { API_CONFIG } from '../config/apiConfig';
-import { apiClient } from './apiClient';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, query, where, deleteDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -30,7 +29,7 @@ export class EquipmentService {
         return [];
       }
     }
-    return apiClient.get<Equipment[]>(`/users/${userId}/equipment`);
+    return [];
   }
 
   static async saveEquipment(userId: string, equipment: Partial<Equipment>): Promise<void> {
@@ -49,7 +48,7 @@ export class EquipmentService {
       }
       return;
     }
-    return apiClient.post(`/users/${userId}/equipment`, equipment);
+    throw new Error('Customer equipment save API is not defined in the current API contract.');
   }
 
   static async deleteEquipment(userId: string, equipmentId: string): Promise<void> {
@@ -62,6 +61,6 @@ export class EquipmentService {
       }
       return;
     }
-    return apiClient.delete(`/users/${userId}/equipment/${equipmentId}`);
+    throw new Error('Customer equipment delete API is not defined in the current API contract.');
   }
 }

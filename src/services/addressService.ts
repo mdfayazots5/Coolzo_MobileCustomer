@@ -1,5 +1,4 @@
 import { API_CONFIG } from '../config/apiConfig';
-import { apiClient } from './apiClient';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, query, where, deleteDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -31,7 +30,7 @@ export class AddressService {
         return [];
       }
     }
-    return apiClient.get<Address[]>(`/users/${userId}/addresses`);
+    return [];
   }
 
   static async saveAddress(userId: string, address: Partial<Address>): Promise<void> {
@@ -50,7 +49,7 @@ export class AddressService {
       }
       return;
     }
-    return apiClient.post(`/users/${userId}/addresses`, address);
+    throw new Error('Customer address save API is not defined in the current API contract.');
   }
 
   static async deleteAddress(userId: string, addressId: string): Promise<void> {
@@ -63,6 +62,6 @@ export class AddressService {
       }
       return;
     }
-    return apiClient.delete(`/users/${userId}/addresses/${addressId}`);
+    throw new Error('Customer address delete API is not defined in the current API contract.');
   }
 }

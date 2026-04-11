@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   ChevronLeft, 
@@ -31,8 +31,9 @@ const RaiseTicket = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthStore();
-  const initialSrNumber = location.state?.srNumber || '';
+  const initialSrNumber = location.state?.srNumber || location.state?.jobId || '';
 
+  const [categories, setCategories] = useState(CATEGORIES);
   const [category, setCategory] = useState('');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
@@ -40,6 +41,15 @@ const RaiseTicket = () => {
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  useEffect(() => {
+    SupportService.getCategories()
+      .then((items) => {
+        const labels = items.map((item) => item.label).filter(Boolean);
+        if (labels.length > 0) setCategories(labels);
+      })
+      .catch((error) => console.error('Failed to load support categories:', error));
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -72,7 +82,7 @@ const RaiseTicket = () => {
       await SupportService.createTicket(user.uid, {
         category,
         subject,
-        description,
+        description: srNumber ? `${description}\n\nRelated booking: ${srNumber}` : description,
         priority: 'Medium',
         status: 'Open'
       });
@@ -146,7 +156,7 @@ const RaiseTicket = () => {
               className="w-full h-14 pl-5 pr-12 bg-white border border-navy/5 rounded-2xl text-sm font-bold text-navy appearance-none focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all"
             >
               <option value="" disabled>Select a category</option>
-              {CATEGORIES.map(cat => (
+              {categories.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>

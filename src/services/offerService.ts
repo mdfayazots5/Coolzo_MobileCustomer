@@ -1,5 +1,4 @@
 import { API_CONFIG } from '../config/apiConfig';
-import { apiClient } from './apiClient';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 
@@ -28,7 +27,7 @@ export class OfferService {
         return [];
       }
     }
-    return apiClient.get<Offer[]>('/offers');
+    return [];
   }
 
   static async validateCoupon(code: string, userId: string): Promise<Offer | null> {
@@ -43,6 +42,6 @@ export class OfferService {
         return null;
       }
     }
-    return apiClient.post<Offer | null>('/offers/validate', { code, userId });
+    return null;
   }
 }

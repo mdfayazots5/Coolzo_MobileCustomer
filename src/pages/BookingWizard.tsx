@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, ChevronRight, Loader2, X, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,22 +15,23 @@ import Step5Contact from '@/components/booking/Step5Contact';
 import Step6Summary from '@/components/booking/Step6Summary';
 
 import { BookingService } from '@/services/bookingService';
-import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/store/useAuthStore';
+import { API_CONFIG } from '@/config/apiConfig';
 
 export default function BookingWizard() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const { user, isAuthenticated } = useAuthStore();
   const { 
     step, 
     setStep, 
     serviceId, 
     subServiceId, 
+    servicePrice,
     equipment, 
     location: bookingLocation, 
     slot, 
     contact,
-    resetBooking
   } = useBookingStore();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,9 +40,11 @@ export default function BookingWizard() {
   const isStepValid = () => {
     switch (step) {
       case 1: return !!serviceId && !!subServiceId;
-      case 2: return !!equipment.brand && !!equipment.type && !!equipment.capacity;
-      case 3: return !!bookingLocation.addressLine1 && !!bookingLocation.pinCode && bookingLocation.pinCode.length === 6;
-      case 4: return slot.isEmergency || (!!slot.date && !!slot.timeWindow);
+      case 2: return API_CONFIG.IS_MOCK
+        ? !!equipment.brand && !!equipment.type && !!equipment.capacity
+        : !!equipment.brandId && !!equipment.acTypeId && !!equipment.tonnageId;
+      case 3: return !!bookingLocation.addressLine1 && !!bookingLocation.pinCode && bookingLocation.pinCode.length === 6 && (API_CONFIG.IS_MOCK || !!bookingLocation.zoneId);
+      case 4: return slot.isEmergency || (API_CONFIG.IS_MOCK ? !!slot.date && !!slot.timeWindow : !!slot.date && !!slot.slotAvailabilityId);
       case 5: return !!contact.fullName && !!contact.mobile && !!contact.email;
       case 6: return true;
       default: return false;
@@ -66,7 +69,7 @@ export default function BookingWizard() {
   };
 
   const handleSubmit = async () => {
-    if (!auth.currentUser) {
+    if (!isAuthenticated || !user) {
       toast.error('Please log in to complete your booking');
       navigate('/login');
       return;
@@ -75,7 +78,7 @@ export default function BookingWizard() {
     setIsSubmitting(true);
     try {
       const bookingData = {
-        userId: auth.currentUser.uid,
+        userId: user.uid,
         serviceId: serviceId || '',
         subServiceId: subServiceId || '',
         equipment,
@@ -84,12 +87,12 @@ export default function BookingWizard() {
         contact,
         status: 'Booked',
         srNumber: "CZ-" + Math.floor(100000 + Math.random() * 900000),
-        price: 499 + (slot.isEmergency ? 499 : 0), // Mock price calculation
+        price: servicePrice + (slot.isEmergency ? 499 : 0),
       } as any;
 
-      await BookingService.createBooking(bookingData);
+      const bookingId = await BookingService.createBooking(bookingData);
       toast.success('Booking confirmed!');
-      navigate('/booking-confirmation');
+      navigate('/booking-confirmation', { state: { bookingId } });
     } catch (error) {
       console.error('Booking failed:', error);
       toast.error('Failed to create booking. Please try again.');

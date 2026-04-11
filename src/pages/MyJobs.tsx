@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -12,22 +12,41 @@ import {
   AlertCircle,
   CheckCircle2,
   XCircle,
-  Zap
+  Zap,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import EmptyState from '@/components/EmptyState';
-import { JOBS, Job } from '@/lib/mockData';
 import { cn } from '@/lib/utils';
+import { BookingService } from '@/services/bookingService';
+import { useAuthStore } from '@/store/useAuthStore';
 
 type TabType = 'All' | 'Active' | 'Completed' | 'Cancelled';
 
 export default function MyJobs() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredJobs = JOBS.filter(job => {
+  useEffect(() => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+
+    const unsubscribe = BookingService.getLiveJobs(user.uid, (data) => {
+      setJobs(data);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const filteredJobs = jobs.filter(job => {
     const matchesTab = 
       activeTab === 'All' || 
       (activeTab === 'Active' && !['Completed', 'Cancelled'].includes(job.status)) ||
@@ -41,7 +60,7 @@ export default function MyJobs() {
     return matchesTab && matchesSearch;
   });
 
-  const getStatusColor = (status: Job['status']) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'Completed': return 'text-green-500 bg-green-500/10';
       case 'Cancelled': return 'text-red-500 bg-red-500/10';
@@ -52,7 +71,7 @@ export default function MyJobs() {
     }
   };
 
-  const getStatusIcon = (status: Job['status']) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'Completed': return CheckCircle2;
       case 'Cancelled': return XCircle;
@@ -113,7 +132,11 @@ export default function MyJobs() {
       {/* Jobs List */}
       <div className="px-6 py-8 space-y-4">
         <AnimatePresence mode="popLayout">
-          {filteredJobs.length > 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-16 text-gold">
+              <Loader2 className="w-9 h-9 animate-spin" />
+            </div>
+          ) : filteredJobs.length > 0 ? (
             filteredJobs.map((job) => {
               const StatusIcon = getStatusIcon(job.status);
               return (
@@ -124,7 +147,7 @@ export default function MyJobs() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   className="bg-white rounded-[32px] p-6 border border-navy/5 shadow-sm group active:scale-[0.98] transition-transform"
-                  onClick={() => navigate(`/booking-detail/${job.id}`)}
+                  onClick={() => navigate(`/app/booking-detail/${job.id}`)}
                 >
                   <div className="flex items-start justify-between mb-6">
                     <div className="flex items-center gap-3">
@@ -170,7 +193,7 @@ export default function MyJobs() {
                       onClick={(e) => {
                         e.stopPropagation();
                         if (['Completed', 'Cancelled'].includes(job.status)) {
-                          navigate(`/booking-detail/${job.id}`);
+                          navigate(`/app/booking-detail/${job.id}`);
                         } else {
                           navigate(`/job-tracker/${job.id}`);
                         }

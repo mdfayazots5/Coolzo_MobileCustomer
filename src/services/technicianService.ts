@@ -1,5 +1,4 @@
 import { API_CONFIG } from '../config/apiConfig';
-import { apiClient } from './apiClient';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -31,6 +30,6 @@ export class TechnicianService {
         return null;
       }
     }
-    return apiClient.get<Technician>(`/technicians/${id}`);
+    return null;
   }
 }

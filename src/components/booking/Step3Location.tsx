@@ -1,16 +1,57 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useBookingStore } from '@/store/useBookingStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MapPin, Map as MapIcon, Check, Home, Briefcase, MoreHorizontal } from 'lucide-react';
+import { MapPin, Map as MapIcon, Check, Home, Briefcase, MoreHorizontal, Loader2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { CatalogService } from '@/services/catalogService';
 
 export default function Step3Location() {
   const { location, updateLocation } = useBookingStore();
   const { isAuthenticated } = useAuthStore();
+  const [zoneLoading, setZoneLoading] = useState(false);
+  const [zoneError, setZoneError] = useState('');
+
+  useEffect(() => {
+    if (location.pinCode.length !== 6) {
+      setZoneError('');
+      return;
+    }
+
+    let isMounted = true;
+    setZoneLoading(true);
+    CatalogService.getZoneByPincode(location.pinCode)
+      .then((zone) => {
+        if (!isMounted) return;
+        if (zone) {
+          updateLocation({
+            zoneId: zone.zoneId,
+            city: zone.cityName || location.city,
+          });
+          setZoneError('');
+        } else {
+          updateLocation({ zoneId: null });
+          setZoneError('Service is not available for this PIN code yet.');
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to resolve PIN code zone:', error);
+        if (isMounted) {
+          updateLocation({ zoneId: null });
+          setZoneError('Service is not available for this PIN code yet.');
+        }
+      })
+      .finally(() => {
+        if (isMounted) setZoneLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [location.pinCode]);
 
   const labels = [
     { id: 'Home', icon: Home },
@@ -71,14 +112,20 @@ export default function Step3Location() {
                   placeholder="400001" 
                   className="h-14 rounded-2xl border-navy/10 bg-white pr-10"
                   value={location.pinCode}
-                  onChange={(e) => updateLocation({ pinCode: e.target.value })}
+                  onChange={(e) => updateLocation({ pinCode: e.target.value.replace(/\D/g, '').slice(0, 6), zoneId: null })}
                 />
-                {location.pinCode.length === 6 && (
+                {zoneLoading && (
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                    <Loader2 className="w-4 h-4 text-gold animate-spin" />
+                  </div>
+                )}
+                {!zoneLoading && location.zoneId && (
                   <div className="absolute right-4 top-1/2 -translate-y-1/2">
                     <Check className="w-4 h-4 text-green-500" />
                   </div>
                 )}
               </div>
+              {zoneError && <p className="text-[10px] font-bold text-red-500 ml-1">{zoneError}</p>}
             </div>
           </div>
         </div>
