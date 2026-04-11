@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, 
@@ -7,24 +7,49 @@ import {
   History, 
   ArrowUpRight,
   Gift,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { LoyaltyService, LoyaltyPoints, LoyaltyTransaction } from '@/services/loyaltyService';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const LoyaltyRewards = () => {
   const navigate = useNavigate();
-  const points = 450;
-  const tier = 'Silver';
+  const { user } = useAuthStore();
+  const [pointsData, setPointsData] = useState<LoyaltyPoints | null>(null);
+  const [transactions, setTransactions] = useState<LoyaltyTransaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const history = [
-    { id: 1, label: 'Service Completed', date: '2026-04-05', points: 100, type: 'earn' },
-    { id: 2, label: 'Referral Bonus', date: '2026-03-28', points: 250, type: 'earn' },
-    { id: 3, label: 'Points Redeemed', date: '2026-03-15', points: -50, type: 'spend' },
-    { id: 4, label: 'AMC Renewal', date: '2026-02-10', points: 150, type: 'earn' }
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user) return;
+      try {
+        const [points, history] = await Promise.all([
+          LoyaltyService.getLoyaltyPoints(user.uid),
+          LoyaltyService.getTransactions(user.uid)
+        ]);
+        setPointsData(points);
+        setTransactions(history);
+      } catch (error) {
+        console.error('Failed to fetch loyalty data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [user]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -48,9 +73,9 @@ const LoyaltyRewards = () => {
             <div className="flex justify-between items-start mb-8">
               <div>
                 <Badge className="bg-gold/20 text-gold border-none font-bold text-[10px] uppercase tracking-widest px-3 py-1 mb-2">
-                  {tier} Tier
+                  {pointsData?.tier} Tier
                 </Badge>
-                <h2 className="text-4xl font-display font-bold text-gold">{points}</h2>
+                <h2 className="text-4xl font-display font-bold text-gold">{pointsData?.balance}</h2>
                 <p className="text-warm-white/40 text-[10px] font-bold uppercase tracking-widest">Available Points</p>
               </div>
               <div className="w-16 h-16 rounded-[24px] bg-gold/10 border border-gold/20 flex items-center justify-center text-gold">
@@ -60,13 +85,13 @@ const LoyaltyRewards = () => {
 
             <div className="space-y-2">
               <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest">
-                <span className="text-warm-white/40">Next Tier: Gold</span>
-                <span className="text-gold">50 points to go</span>
+                <span className="text-warm-white/40">Next Tier</span>
+                <span className="text-gold">{pointsData?.nextTierPoints} points to go</span>
               </div>
               <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
-                  animate={{ width: '90%' }}
+                  animate={{ width: `${Math.min(100, (pointsData?.balance || 0) / ((pointsData?.balance || 0) + (pointsData?.nextTierPoints || 1)) * 100)}%` }}
                   className="h-full bg-gold"
                 />
               </div>
@@ -117,7 +142,7 @@ const LoyaltyRewards = () => {
             <button className="text-[10px] font-bold text-gold uppercase tracking-widest">View All</button>
           </div>
           <div className="space-y-3">
-            {history.map((item) => (
+            {transactions.map((item) => (
               <div key={item.id} className="bg-white rounded-2xl p-4 border border-navy/5 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className={cn(
@@ -127,15 +152,15 @@ const LoyaltyRewards = () => {
                     <ArrowUpRight className={cn("w-5 h-5", item.type === 'spend' && "rotate-180")} />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-navy">{item.label}</p>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-navy/20">{item.date}</p>
+                    <p className="text-sm font-bold text-navy">{item.description}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-navy/20">{new Date(item.date).toLocaleDateString()}</p>
                   </div>
                 </div>
                 <p className={cn(
                   "text-sm font-bold",
                   item.type === 'earn' ? "text-green-600" : "text-red-600"
                 )}>
-                  {item.type === 'earn' ? '+' : ''}{item.points} pts
+                  {item.type === 'earn' ? '+' : '-'}{item.points} pts
                 </p>
               </div>
             ))}

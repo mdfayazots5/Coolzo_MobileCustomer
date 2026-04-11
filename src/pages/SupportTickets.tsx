@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, 
@@ -8,22 +8,50 @@ import {
   MessageSquare, 
   Clock, 
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import EmptyState from '@/components/EmptyState';
-import { SUPPORT_TICKETS } from '@/lib/mockData';
+import { SupportService, SupportTicket } from '@/services/supportService';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const SupportTickets = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'All' | 'Open' | 'In Progress' | 'Resolved'>('All');
 
-  const filteredTickets = SUPPORT_TICKETS.filter(t => 
+  useEffect(() => {
+    const fetchTickets = async () => {
+      if (!user) return;
+      try {
+        const data = await SupportService.getTickets(user.uid);
+        setTickets(data);
+      } catch (error) {
+        console.error('Failed to fetch tickets:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchTickets();
+  }, [user]);
+
+  const filteredTickets = tickets.filter(t => 
     activeTab === 'All' || t.status === activeTab
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -88,7 +116,7 @@ const SupportTickets = () => {
                 )}>
                   {ticket.status}
                 </Badge>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-navy/20">{ticket.ticketNumber}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-navy/20">#{ticket.id.slice(0, 6)}</p>
               </div>
 
               <h3 className="font-bold text-navy mb-2 leading-tight">{ticket.subject}</h3>
@@ -96,7 +124,7 @@ const SupportTickets = () => {
               <div className="flex items-center gap-4 mt-4 pt-4 border-t border-navy/5">
                 <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-navy/40">
                   <Clock className="w-3 h-3" />
-                  {new Date(ticket.createdAt).toLocaleDateString()}
+                  {ticket.createdAt?.toDate ? ticket.createdAt.toDate().toLocaleDateString() : new Date(ticket.createdAt).toLocaleDateString()}
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-navy/40">
                   <MessageSquare className="w-3 h-3" />

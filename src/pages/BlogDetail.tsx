@@ -1,17 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Share2, Clock, Calendar, Bookmark } from 'lucide-react';
+import { ArrowLeft, Share2, Clock, Calendar, Bookmark, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ARTICLES } from '@/lib/mockData';
+import { ContentService, Blog as BlogType } from '@/services/contentService';
 
 export default function BlogDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const article = ARTICLES.find(a => a.id === id);
+  const [article, setArticle] = useState<BlogType | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (!article) return null;
+  useEffect(() => {
+    const fetchArticle = async () => {
+      if (!id) return;
+      try {
+        const data = await ContentService.getBlogById(id);
+        setArticle(data);
+      } catch (error) {
+        console.error('Failed to fetch article:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchArticle();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
+
+  if (!article) return (
+    <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
+      <h2 className="text-2xl font-display font-bold text-navy mb-4">Article Not Found</h2>
+      <Button onClick={() => navigate(-1)}>Go Back</Button>
+    </div>
+  );
 
   const handleShare = () => {
     if (navigator.share) {
@@ -74,7 +103,7 @@ export default function BlogDetail() {
           </div>
           <div className="flex items-center gap-2 text-navy/40 text-[10px] font-bold uppercase tracking-widest">
             <Clock className="w-4 h-4 text-gold" />
-            <span>{article.readTime} read</span>
+            <span>5 min read</span>
           </div>
         </div>
 
@@ -83,40 +112,14 @@ export default function BlogDetail() {
             {article.excerpt}
           </p>
           <div className="text-navy/70 leading-relaxed space-y-6">
-            <p>{article.content}</p>
-            <p>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-            </p>
-            <h3 className="text-xl font-display font-bold text-navy mt-10 mb-4">Why regular maintenance matters</h3>
-            <p>
-              Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-            </p>
-            <p>
-              At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident.
-            </p>
+            <div dangerouslySetInnerHTML={{ __html: article.content }} />
           </div>
         </div>
 
         {/* Related Articles Teaser */}
         <div className="mt-16 pt-10 border-t border-navy/5">
           <h3 className="text-xl font-display font-bold text-navy mb-6">Related Articles</h3>
-          <div className="grid grid-cols-1 gap-6">
-            {ARTICLES.filter(a => a.id !== article.id).slice(0, 2).map(related => (
-              <div 
-                key={related.id} 
-                className="flex gap-4 items-center group cursor-pointer"
-                onClick={() => navigate(`/blog/${related.id}`)}
-              >
-                <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0">
-                  <img src={related.image} alt={related.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-navy text-sm leading-snug group-hover:text-gold transition-colors">{related.title}</h4>
-                  <p className="text-[10px] text-navy/40 font-bold uppercase tracking-widest mt-1">{related.date}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="text-navy/40 text-xs italic">More articles coming soon...</p>
         </div>
       </div>
     </div>

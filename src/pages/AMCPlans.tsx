@@ -1,36 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Check, ShieldCheck, Zap, Crown, Building2, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Check, ShieldCheck, Zap, Crown, Building2, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { AMC_PLANS } from '@/lib/mockData';
+import { AMCService, AMCPlan } from '@/services/amcService';
 import { useBookingStore } from '@/store/useBookingStore';
 import { cn } from '@/lib/utils';
 
 const PlanIcon = ({ name }: { name: string }) => {
-  switch (name) {
-    case 'Basic': return <ShieldCheck className="w-6 h-6" />;
-    case 'Standard': return <Zap className="w-6 h-6" />;
-    case 'Premium': return <Crown className="w-6 h-6" />;
-    case 'Enterprise': return <Building2 className="w-6 h-6" />;
-    default: return <ShieldCheck className="w-6 h-6" />;
-  }
+  if (name.includes('Basic')) return <ShieldCheck className="w-6 h-6" />;
+  if (name.includes('Standard')) return <Zap className="w-6 h-6" />;
+  if (name.includes('Premium')) return <Crown className="w-6 h-6" />;
+  if (name.includes('Enterprise')) return <Building2 className="w-6 h-6" />;
+  return <ShieldCheck className="w-6 h-6" />;
 };
 
 export default function AMCPlans() {
   const navigate = useNavigate();
-  const [activePlan, setActivePlan] = useState(1); // Standard plan by default
+  const [plans, setPlans] = useState<AMCPlan[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activePlan, setActivePlan] = useState(0);
   const { updateBooking, setStep, resetBooking } = useBookingStore();
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const data = await AMCService.getPlans();
+        setPlans(data);
+      } catch (error) {
+        console.error('Failed to fetch AMC plans:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPlans();
+  }, []);
 
   const handleBookAMC = (planId: string) => {
     resetBooking();
     updateBooking({ 
-      serviceId: 'amc', // Special ID for AMC
+      serviceId: 'amc', 
       subServiceId: planId 
     });
     setStep(2);
     navigate('/book');
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white pb-12">
@@ -54,16 +76,16 @@ export default function AMCPlans() {
       {/* Plan Cards Horizontal Scroll */}
       <div className="px-6 -mt-8 mb-12">
         <div className="flex gap-4 overflow-x-auto no-scrollbar pb-6 snap-x snap-mandatory">
-          {AMC_PLANS.map((plan, index) => (
+          {plans.map((plan, index) => (
             <motion.div
               key={plan.id}
               className={cn(
                 "snap-center shrink-0 w-[280px] bg-white rounded-[32px] p-6 shadow-xl border-2 transition-all duration-500",
-                plan.recommended ? "border-gold" : "border-transparent"
+                index === activePlan ? "border-gold" : "border-transparent"
               )}
               onClick={() => setActivePlan(index)}
             >
-              {plan.recommended && (
+              {index === 1 && (
                 <div className="bg-gold text-navy text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full w-fit mb-4">
                   Most Popular
                 </div>
@@ -71,7 +93,7 @@ export default function AMCPlans() {
               
               <div className={cn(
                 "w-12 h-12 rounded-2xl flex items-center justify-center mb-4",
-                plan.recommended ? "bg-gold text-navy" : "bg-navy/5 text-navy"
+                index === activePlan ? "bg-gold text-navy" : "bg-navy/5 text-navy"
               )}>
                 <PlanIcon name={plan.name} />
               </div>
@@ -79,11 +101,9 @@ export default function AMCPlans() {
               <h3 className="text-2xl font-display font-bold text-navy mb-1">{plan.name}</h3>
               <div className="flex items-baseline gap-1 mb-6">
                 <span className="text-3xl font-bold text-navy">
-                  {typeof plan.price === 'number' ? `₹${plan.price}` : plan.price}
+                  ₹{plan.price}
                 </span>
-                {typeof plan.price === 'number' && (
-                  <span className="text-navy/40 text-xs font-medium">/{plan.period.toLowerCase()}</span>
-                )}
+                <span className="text-navy/40 text-xs font-medium">/{plan.duration.toLowerCase()}</span>
               </div>
 
               <ul className="space-y-3 mb-8">

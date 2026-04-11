@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, 
@@ -7,83 +7,64 @@ import {
   Mail, 
   Smartphone,
   CheckCircle2,
-  Info
+  Info,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { NotificationService, NotificationPreferences as Prefs } from '@/services/notificationService';
+import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
-
-interface Preference {
-  id: string;
-  label: string;
-  description: string;
-  channels: {
-    push: boolean;
-    whatsapp: boolean;
-    email: boolean;
-    sms: boolean;
-  };
-  required?: boolean;
-}
-
-const INITIAL_PREFERENCES: Preference[] = [
-  {
-    id: 'booking',
-    label: 'Booking Confirmations',
-    description: 'Updates about your service bookings and schedules.',
-    channels: { push: true, whatsapp: true, email: true, sms: true },
-    required: true
-  },
-  {
-    id: 'technician',
-    label: 'Technician Updates',
-    description: 'Live tracking and technician arrival notifications.',
-    channels: { push: true, whatsapp: true, email: false, sms: true }
-  },
-  {
-    id: 'payment',
-    label: 'Invoice & Payments',
-    description: 'Billing updates, receipts, and payment reminders.',
-    channels: { push: true, whatsapp: true, email: true, sms: false }
-  },
-  {
-    id: 'amc',
-    label: 'AMC Reminders',
-    description: 'Notifications for upcoming AMC visits and renewals.',
-    channels: { push: true, whatsapp: true, email: true, sms: true }
-  },
-  {
-    id: 'promotions',
-    label: 'Offers & Promotions',
-    description: 'Exclusive discounts and seasonal service offers.',
-    channels: { push: false, whatsapp: false, email: true, sms: false }
-  }
-];
 
 const NotificationPreferences = () => {
   const navigate = useNavigate();
-  const [preferences, setPreferences] = useState(INITIAL_PREFERENCES);
+  const { user } = useAuthStore();
+  const [prefs, setPrefs] = useState<Prefs | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const toggleChannel = (prefId: string, channel: keyof Preference['channels']) => {
-    setPreferences(prev => prev.map(p => {
-      if (p.id === prefId && !p.required) {
-        return {
-          ...p,
-          channels: { ...p.channels, [channel]: !p.channels[channel] }
-        };
+  useEffect(() => {
+    const fetchPrefs = async () => {
+      if (!user) return;
+      try {
+        const data = await NotificationService.getPreferences(user.uid);
+        setPrefs(data);
+      } catch (error) {
+        console.error('Failed to fetch preferences:', error);
+      } finally {
+        setIsLoading(false);
       }
-      return p;
-    }));
+    };
+    fetchPrefs();
+  }, [user]);
+
+  const toggleChannel = (channel: keyof Prefs) => {
+    if (!prefs) return;
+    setPrefs({ ...prefs, [channel]: !prefs[channel] });
   };
 
   const handleSave = async () => {
+    if (!user || !prefs) return;
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSaving(false);
-    toast.success('Preferences saved successfully');
+    try {
+      await NotificationService.updatePreferences(user.uid, prefs);
+      toast.success('Preferences saved successfully');
+    } catch (error) {
+      console.error('Failed to save preferences:', error);
+      toast.error('Failed to save preferences');
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -113,39 +94,74 @@ const NotificationPreferences = () => {
 
         {/* Preferences List */}
         <div className="space-y-6">
-          {preferences.map((pref) => (
-            <div key={pref.id} className="bg-white rounded-[32px] p-6 border border-navy/5 shadow-sm">
-              <div className="mb-6">
-                <h3 className="font-bold text-navy mb-1">{pref.label}</h3>
-                <p className="text-navy/40 text-[10px] font-medium leading-relaxed">{pref.description}</p>
-              </div>
-
-              <div className="grid grid-cols-4 gap-2">
-                {[
-                  { id: 'push', icon: Bell, label: 'Push' },
-                  { id: 'whatsapp', icon: MessageSquare, label: 'WA' },
-                  { id: 'email', icon: Mail, label: 'Email' },
-                  { id: 'sms', icon: Smartphone, label: 'SMS' }
-                ].map((channel) => (
-                  <button
-                    key={channel.id}
-                    disabled={pref.required}
-                    onClick={() => toggleChannel(pref.id, channel.id as any)}
-                    className={cn(
-                      "flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all",
-                      pref.channels[channel.id as keyof Preference['channels']]
-                        ? "bg-gold/10 border-gold text-gold"
-                        : "bg-navy/5 border-transparent text-navy/20",
-                      pref.required && "opacity-50 cursor-not-allowed"
-                    )}
-                  >
-                    <channel.icon className="w-5 h-5" />
-                    <span className="text-[8px] font-bold uppercase tracking-widest">{channel.label}</span>
-                  </button>
-                ))}
-              </div>
+          <div className="bg-white rounded-[32px] p-6 border border-navy/5 shadow-sm">
+            <div className="mb-6">
+              <h3 className="font-bold text-navy mb-1">Communication Channels</h3>
+              <p className="text-navy/40 text-[10px] font-medium leading-relaxed">Choose how you want to receive updates from us.</p>
             </div>
-          ))}
+
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { id: 'push', icon: Bell, label: 'Push Notifications' },
+                { id: 'whatsapp', icon: MessageSquare, label: 'WhatsApp' },
+                { id: 'email', icon: Mail, label: 'Email' },
+                { id: 'sms', icon: Smartphone, label: 'SMS' }
+              ].map((channel) => (
+                <button
+                  key={channel.id}
+                  onClick={() => toggleChannel(channel.id as keyof Prefs)}
+                  className={cn(
+                    "flex flex-col items-center gap-3 p-6 rounded-3xl border transition-all",
+                    prefs?.[channel.id as keyof Prefs]
+                      ? "bg-gold/10 border-gold text-gold"
+                      : "bg-navy/5 border-transparent text-navy/20"
+                  )}
+                >
+                  <channel.icon className="w-6 h-6" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest">{channel.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-[32px] p-6 border border-navy/5 shadow-sm">
+            <div className="mb-6">
+              <h3 className="font-bold text-navy mb-1">Content Preferences</h3>
+              <p className="text-navy/40 text-[10px] font-medium leading-relaxed">Select the type of content you want to see.</p>
+            </div>
+
+            <div className="space-y-3">
+              {[
+                { id: 'offers', label: 'Offers & Promotions', desc: 'Get notified about exclusive deals' },
+                { id: 'updates', label: 'Service Updates', desc: 'New features and service improvements' }
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => toggleChannel(item.id as keyof Prefs)}
+                  className={cn(
+                    "w-full flex items-center justify-between p-4 rounded-2xl border transition-all",
+                    prefs?.[item.id as keyof Prefs]
+                      ? "bg-gold/5 border-gold/20"
+                      : "bg-white border-navy/5"
+                  )}
+                >
+                  <div className="text-left">
+                    <p className="text-sm font-bold text-navy">{item.label}</p>
+                    <p className="text-[10px] text-navy/40 font-medium">{item.desc}</p>
+                  </div>
+                  <div className={cn(
+                    "w-10 h-6 rounded-full relative transition-colors",
+                    prefs?.[item.id as keyof Prefs] ? "bg-gold" : "bg-navy/10"
+                  )}>
+                    <div className={cn(
+                      "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                      prefs?.[item.id as keyof Prefs] ? "left-5" : "left-1"
+                    )} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Save Button */}

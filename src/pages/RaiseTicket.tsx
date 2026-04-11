@@ -6,13 +6,16 @@ import {
   X, 
   CheckCircle2,
   AlertCircle,
-  ChevronDown
+  ChevronDown,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { JOBS } from '@/lib/mockData';
+import { SupportService } from '@/services/supportService';
+import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 
 const CATEGORIES = [
@@ -27,6 +30,7 @@ const CATEGORIES = [
 const RaiseTicket = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuthStore();
   const initialSrNumber = location.state?.srNumber || '';
 
   const [category, setCategory] = useState('');
@@ -54,16 +58,30 @@ const RaiseTicket = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      toast.error('Please login to raise a ticket');
+      return;
+    }
     if (!category || !subject || !description) {
       toast.error('Please fill all required fields');
       return;
     }
 
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsSubmitting(false);
-    setShowSuccess(true);
+    try {
+      await SupportService.createTicket(user.uid, {
+        category,
+        subject,
+        description,
+        priority: 'Medium',
+        status: 'Open'
+      });
+      setShowSuccess(true);
+    } catch (error) {
+      toast.error('Failed to raise ticket. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (showSuccess) {

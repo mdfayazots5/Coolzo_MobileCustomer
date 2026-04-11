@@ -1,10 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Heart, Target, Shield, Users, Globe } from 'lucide-react';
+import { ArrowLeft, Heart, Target, Shield, Users, Globe, Loader2 } from 'lucide-react';
+import { ContentService } from '@/services/contentService';
+import { cn } from '@/lib/utils';
 
 export default function AboutUs() {
   const navigate = useNavigate();
+  const [about, setAbout] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAbout = async () => {
+      try {
+        const data = await ContentService.getAboutContent();
+        setAbout(data);
+      } catch (error) {
+        console.error('Failed to fetch about content:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAbout();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white pb-12">
@@ -25,10 +51,10 @@ export default function AboutUs() {
         <section>
           <h2 className="text-xl font-display font-bold text-navy mb-4">The Coolzo Journey</h2>
           <p className="text-navy/60 leading-relaxed text-sm">
-            Coolzo was born out of a simple frustration: the lack of professional, reliable, and transparent AC services in India. We realized that while ACs are essential for comfort, the service industry was fragmented and untrustworthy.
+            {about?.vision || "Coolzo was born out of a simple frustration: the lack of professional, reliable, and transparent AC services in India. We realized that while ACs are essential for comfort, the service industry was fragmented and untrustworthy."}
           </p>
           <p className="text-navy/60 leading-relaxed text-sm mt-4">
-            Today, we are proud to be India's most trusted premium AC service platform, serving over 50,000 households and businesses with a team of 500+ certified technicians.
+            {about?.mission || "Today, we are proud to be India's most trusted premium AC service platform, serving over 50,000 households and businesses with a team of 500+ certified technicians."}
           </p>
         </section>
 
@@ -52,22 +78,23 @@ export default function AboutUs() {
 
         {/* Stats */}
         <section className="bg-navy rounded-[32px] p-8 grid grid-cols-2 gap-8">
-          <div className="text-center">
-            <div className="text-3xl font-display font-bold text-gold">5+</div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-warm-white/40 mt-1">Years</p>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-display font-bold text-gold">12+</div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-warm-white/40 mt-1">Cities</p>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-display font-bold text-gold">50k+</div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-warm-white/40 mt-1">Services</p>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-display font-bold text-gold">4.9</div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-warm-white/40 mt-1">Rating</p>
-          </div>
+          {about?.stats?.map((stat: any, i: number) => (
+            <div key={i} className="text-center">
+              <div className="text-3xl font-display font-bold text-gold">{stat.value}</div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-warm-white/40 mt-1">{stat.label}</p>
+            </div>
+          )) || (
+            <>
+              <div className="text-center">
+                <div className="text-3xl font-display font-bold text-gold">5+</div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-warm-white/40 mt-1">Years</p>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-display font-bold text-gold">12+</div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-warm-white/40 mt-1">Cities</p>
+              </div>
+            </>
+          )}
         </section>
 
         {/* The Promise */}
@@ -81,5 +108,3 @@ export default function AboutUs() {
     </div>
   );
 }
-
-import { cn } from '@/lib/utils';

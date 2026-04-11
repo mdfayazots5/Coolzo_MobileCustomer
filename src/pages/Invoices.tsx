@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, 
@@ -7,30 +7,58 @@ import {
   AlertCircle,
   Search,
   Filter,
-  FileText
+  FileText,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { INVOICES } from '@/lib/mockData';
+import { PaymentService, Invoice } from '@/services/paymentService';
+import { useAuthStore } from '@/store/useAuthStore';
 import EmptyState from '@/components/EmptyState';
 
 const Invoices = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'All' | 'Unpaid' | 'Paid' | 'Overdue'>('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredInvoices = INVOICES.filter(inv => {
-    const matchesTab = activeTab === 'All' || inv.status === activeTab;
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      if (!user) return;
+      try {
+        const data = await PaymentService.getInvoices(user.uid);
+        setInvoices(data);
+      } catch (error) {
+        console.error('Failed to fetch invoices:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchInvoices();
+  }, [user]);
+
+  const filteredInvoices = invoices.filter(inv => {
+    const matchesTab = activeTab === 'All' || inv.status === activeTab || (activeTab === 'Unpaid' && inv.status === 'Pending');
     const matchesSearch = inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         inv.srNumber.toLowerCase().includes(searchQuery.toLowerCase());
+                         inv.jobId.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesTab && matchesSearch;
   });
 
-  const totalOutstanding = INVOICES
-    .filter(inv => inv.status === 'Unpaid' || inv.status === 'Overdue')
+  const totalOutstanding = invoices
+    .filter(inv => inv.status === 'Pending' || inv.status === 'Overdue')
     .reduce((sum, inv) => sum + inv.amount, 0);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -122,7 +150,7 @@ const Invoices = () => {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mb-1">{inv.invoiceNumber}</p>
-                  <h3 className="font-bold text-navy">Service Job {inv.srNumber}</h3>
+                  <h3 className="font-bold text-navy">Service Job {inv.jobId}</h3>
                 </div>
                 <Badge className={cn(
                   "border-none font-bold text-[10px] uppercase tracking-widest px-3 py-1",

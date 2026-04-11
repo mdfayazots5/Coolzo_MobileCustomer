@@ -1,18 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Check, ShieldCheck, Zap, Crown, Building2, Info, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Check, ShieldCheck, Zap, Crown, Building2, Info, HelpCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AMC_PLANS } from '@/lib/mockData';
+import { AMCService, AMCPlan } from '@/services/amcService';
 import { cn } from '@/lib/utils';
 
 export default function AMCPlanDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const plan = AMC_PLANS.find(p => p.id === id);
+  const [plan, setPlan] = useState<AMCPlan | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (!plan) return null;
+  useEffect(() => {
+    const fetchPlan = async () => {
+      if (!id) return;
+      try {
+        const data = await AMCService.getPlanById(id);
+        setPlan(data);
+      } catch (error) {
+        console.error('Failed to fetch AMC plan:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPlan();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
+
+  if (!plan) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
+        <h1 className="text-2xl font-display font-bold text-navy">Plan not found</h1>
+        <Button onClick={() => navigate('/amc-plans')} className="mt-4 bg-gold text-navy">Back to Plans</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white pb-32">
@@ -40,11 +71,9 @@ export default function AMCPlanDetail() {
 
         <div className="flex items-baseline gap-2 mt-6">
           <span className="text-4xl font-bold text-white">
-            {typeof plan.price === 'number' ? `₹${plan.price}` : plan.price}
+            ₹{plan.price}
           </span>
-          {typeof plan.price === 'number' && (
-            <span className="text-warm-white/40 text-sm font-medium">/per year</span>
-          )}
+          <span className="text-warm-white/40 text-sm font-medium">/{plan.duration.toLowerCase()}</span>
         </div>
 
         <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-gold/5 rounded-full blur-3xl" />

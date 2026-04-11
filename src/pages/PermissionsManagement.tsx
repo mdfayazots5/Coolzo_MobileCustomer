@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, 
@@ -8,17 +8,19 @@ import {
   Image as ImageIcon,
   ShieldCheck,
   ChevronRight,
-  Info
+  Info,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const PermissionsManagement = () => {
   const navigate = useNavigate();
-
-  const permissions = [
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [perms, setPerms] = useState([
     { 
       id: 'location', 
       icon: MapPin, 
@@ -47,7 +49,16 @@ const PermissionsManagement = () => {
       desc: 'Used for attaching images to support tickets.',
       status: 'Not Asked'
     }
-  ];
+  ]);
+
+  const handleEnable = async (id: string) => {
+    setIsUpdating(id);
+    // Simulate system permission request
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setPerms(perms.map(p => p.id === id ? { ...p, status: 'Granted' } : p));
+    setIsUpdating(null);
+    toast.success('Permission granted');
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -81,7 +92,7 @@ const PermissionsManagement = () => {
 
         {/* Permissions List */}
         <div className="space-y-4">
-          {permissions.map((perm) => (
+          {perms.map((perm) => (
             <div key={perm.id} className="bg-white rounded-[32px] p-6 border border-navy/5 shadow-sm">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-4">
@@ -106,8 +117,14 @@ const PermissionsManagement = () => {
                   </div>
                 </div>
                 {perm.status !== 'Granted' && (
-                  <Button size="sm" variant="ghost" className="text-gold font-bold text-[10px] uppercase tracking-widest">
-                    Enable
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={() => handleEnable(perm.id)}
+                    disabled={isUpdating === perm.id}
+                    className="text-gold font-bold text-[10px] uppercase tracking-widest"
+                  >
+                    {isUpdating === perm.id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enable'}
                   </Button>
                 )}
               </div>

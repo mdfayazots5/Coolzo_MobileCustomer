@@ -7,29 +7,63 @@ import {
   CreditCard, 
   Smartphone, 
   Building2,
-  Wallet
+  Wallet,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { INVOICES } from '@/lib/mockData';
+import { PaymentService, Invoice } from '@/services/paymentService';
+import { toast } from 'sonner';
 
 const PaymentGateway = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const invoice = INVOICES.find(inv => inv.id === id);
-  
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [method, setMethod] = useState<'UPI' | 'Card' | 'NetBanking' | 'Wallet'>('UPI');
   const [isProcessing, setIsProcessing] = useState(false);
 
+  useEffect(() => {
+    const fetchInvoice = async () => {
+      if (!id) return;
+      try {
+        const data = await PaymentService.getInvoiceById(id);
+        setInvoice(data);
+      } catch (error) {
+        console.error('Failed to fetch invoice:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchInvoice();
+  }, [id]);
+
   const handlePayment = async () => {
+    if (!invoice) return;
     setIsProcessing(true);
-    // Simulate gateway processing
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    setIsProcessing(false);
-    navigate(`/app/payment-status/success/${id}`);
+    try {
+      await PaymentService.processPayment({
+        invoiceId: id,
+        amount: invoice.amount,
+        method
+      });
+      navigate(`/app/payment-status/success/${id}`);
+    } catch (error) {
+      toast.error('Payment failed. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   if (!invoice) return null;
 

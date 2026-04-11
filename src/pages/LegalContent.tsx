@@ -1,15 +1,42 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, Shield, Lock, ScrollText } from 'lucide-react';
+import { ChevronLeft, Shield, Lock, ScrollText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ContentService } from '@/services/contentService';
 
 const LegalContent = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const isPrivacy = location.pathname.includes('privacy');
+  const type = isPrivacy ? 'privacy' : 'terms';
   
+  const [legal, setLegal] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLegal = async () => {
+      try {
+        const data = await ContentService.getLegalContent(type);
+        setLegal(data);
+      } catch (error) {
+        console.error('Failed to fetch legal content:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchLegal();
+  }, [type]);
+
   const title = isPrivacy ? 'Privacy Policy' : 'Terms & Conditions';
   const Icon = isPrivacy ? Shield : ScrollText;
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -31,43 +58,29 @@ const LegalContent = () => {
           <div className="w-20 h-20 rounded-[32px] bg-gold/10 flex items-center justify-center text-gold mb-6">
             <Icon className="w-10 h-10" />
           </div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40">Last Updated: March 2026</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40">Last Updated: {legal?.lastUpdated || 'March 2026'}</p>
         </div>
 
         <div className="prose prose-navy max-w-none">
-          <section className="mb-8">
-            <h2 className="text-lg font-display font-bold text-navy mb-4">1. Introduction</h2>
-            <p className="text-navy/60 text-sm leading-relaxed">
-              Welcome to Coolzo. We are committed to protecting your personal information and your right to privacy. If you have any questions or concerns about our policy, or our practices with regards to your personal information, please contact us.
-            </p>
-          </section>
+          {legal?.content ? (
+            <div dangerouslySetInnerHTML={{ __html: legal.content }} className="text-navy/60 text-sm leading-relaxed" />
+          ) : (
+            <>
+              <section className="mb-8">
+                <h2 className="text-lg font-display font-bold text-navy mb-4">1. Introduction</h2>
+                <p className="text-navy/60 text-sm leading-relaxed">
+                  Welcome to Coolzo. We are committed to protecting your personal information and your right to privacy. If you have any questions or concerns about our policy, or our practices with regards to your personal information, please contact us.
+                </p>
+              </section>
 
-          <section className="mb-8">
-            <h2 className="text-lg font-display font-bold text-navy mb-4">2. Information We Collect</h2>
-            <p className="text-navy/60 text-sm leading-relaxed">
-              We collect personal information that you voluntarily provide to us when registering at the App, expressing an interest in obtaining information about us or our products and services, when participating in activities on the App or otherwise contacting us.
-            </p>
-            <ul className="list-disc list-inside mt-4 text-navy/60 text-sm space-y-2">
-              <li>Name and Contact Data</li>
-              <li>Credentials</li>
-              <li>Payment Data</li>
-              <li>Social Media Login Data</li>
-            </ul>
-          </section>
-
-          <section className="mb-8">
-            <h2 className="text-lg font-display font-bold text-navy mb-4">3. How We Use Your Information</h2>
-            <p className="text-navy/60 text-sm leading-relaxed">
-              We use personal information collected via our App for a variety of business purposes described below. We process your personal information for these purposes in reliance on our legitimate business interests, in order to enter into or perform a contract with you, with your consent, and/or for compliance with our legal obligations.
-            </p>
-          </section>
-
-          <section className="mb-8">
-            <h2 className="text-lg font-display font-bold text-navy mb-4">4. Sharing Your Information</h2>
-            <p className="text-navy/60 text-sm leading-relaxed">
-              We only share information with your consent, to comply with laws, to provide you with services, to protect your rights, or to fulfill business obligations.
-            </p>
-          </section>
+              <section className="mb-8">
+                <h2 className="text-lg font-display font-bold text-navy mb-4">2. Information We Collect</h2>
+                <p className="text-navy/60 text-sm leading-relaxed">
+                  We collect personal information that you voluntarily provide to us when registering at the App, expressing an interest in obtaining information about us or our products and services, when participating in activities on the App or otherwise contacting us.
+                </p>
+              </section>
+            </>
+          )}
         </div>
 
         <div className="pt-10 border-t border-navy/5 text-center">

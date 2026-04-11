@@ -1,3 +1,4 @@
+import { BookingService } from '@/services/bookingService';
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -69,8 +70,22 @@ const SectionHeader = ({ title, actionLabel, onAction }: { title: string, action
 const HomeTab = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuthStore();
-  const activeJob = JOBS.find(j => !['Completed', 'Cancelled'].includes(j.status));
+  const [activeJobs, setActiveJobs] = useState<any[]>([]);
+  const [recentJobs, setRecentJobs] = useState<any[]>([]);
   const amc = USER_AMC;
+
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+
+    const unsubscribe = BookingService.getLiveJobs(user.uid, (jobs) => {
+      setActiveJobs(jobs.filter((j: any) => !['Completed', 'Cancelled'].includes(j.status)));
+      setRecentJobs(jobs.filter((j: any) => j.status === 'Completed').slice(0, 2));
+    });
+
+    return () => unsubscribe();
+  }, [isAuthenticated, user]);
+
+  const activeJob = activeJobs[0];
 
   if (!isAuthenticated) {
     return (
@@ -282,7 +297,7 @@ const HomeTab = () => {
             <button onClick={() => navigate('/app/jobs')} className="text-[10px] font-bold uppercase tracking-widest text-gold">View All</button>
           </div>
           <div className="space-y-3">
-            {JOBS.filter(j => j.status === 'Completed').slice(0, 2).map((job) => (
+            {recentJobs.map((job) => (
               <div 
                 key={job.id}
                 className="bg-white rounded-3xl p-5 border border-navy/5 flex items-center justify-between group active:scale-[0.98] transition-transform"

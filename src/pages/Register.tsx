@@ -12,7 +12,7 @@ import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 export default function Register() {
   const navigate = useNavigate();
-  const { login } = useAuthStore();
+  const { setUser } = useAuthStore();
   const [step, setStep] = useState<'details' | 'otp'>('details');
   const [isLoading, setIsLoading] = useState(false);
   const [otpValue, setOtpValue] = useState('');
@@ -33,7 +33,7 @@ export default function Register() {
       setIsLoading(true);
       setTimeout(() => {
         if (value === '123456') {
-          login(MOCK_USERS[0]);
+          setUser(MOCK_USERS[0] as any);
           toast.success('Account created successfully!');
           navigate('/app');
         } else {

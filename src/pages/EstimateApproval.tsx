@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -9,10 +9,11 @@ import {
   FileText,
   Info,
   ChevronDown,
-  ShieldCheck
+  ShieldCheck,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { JOBS, Job } from '@/lib/mockData';
+import { BookingService } from '@/services/bookingService';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -25,29 +26,62 @@ const ESTIMATE_ITEMS = [
 export default function EstimateApproval() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const job = JOBS.find(j => j.id === id);
+  const [job, setJob] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
 
-  if (!job) return null;
+  useEffect(() => {
+    const fetchJob = async () => {
+      if (!id) return;
+      try {
+        const data = await BookingService.getBookingById(id);
+        setJob(data);
+      } catch (error) {
+        console.error('Failed to fetch job:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchJob();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
+
+  if (!job) return (
+    <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
+      <h2 className="text-2xl font-display font-bold text-navy mb-4">Job Not Found</h2>
+      <Button onClick={() => navigate(-1)}>Go Back</Button>
+    </div>
+  );
 
   const subtotal = ESTIMATE_ITEMS.reduce((acc, item) => acc + (item.price * item.qty), 0);
   const tax = subtotal * 0.18;
   const total = subtotal + tax;
 
-  const handleApprove = () => {
+  const handleApprove = async () => {
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      await BookingService.approveEstimate(id!, 'est-123');
       toast.success("Estimate approved! Technician will proceed.");
-      navigate(`/job-tracker/${job.id}`);
-    }, 2000);
+      navigate(`/app/job-tracker/${id}`);
+    } catch (error) {
+      toast.error("Failed to approve estimate");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDecline = () => {
     setShowDeclineDialog(false);
     toast.error("Estimate declined. Technician notified.");
-    navigate(`/job-tracker/${job.id}`);
+    navigate(`/app/job-tracker/${id}`);
   };
 
   return (

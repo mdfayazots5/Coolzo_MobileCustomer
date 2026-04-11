@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
   ChevronLeft, 
@@ -7,17 +7,21 @@ import {
   ThumbsUp, 
   ThumbsDown,
   MessageSquare,
-  ArrowRight
+  ArrowRight,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { JOBS, TECHNICIANS } from '@/lib/mockData';
+import { ReviewService } from '@/services/reviewService';
+import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 
 const ReviewSubmission = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const job = JOBS.find(j => j.id === id) || JOBS[0];
   const technician = TECHNICIANS.find(t => t.id === job.technicianId);
 
@@ -35,14 +39,30 @@ const ReviewSubmission = () => {
   ];
 
   const handleSubmit = async () => {
+    if (!user) {
+      toast.error('Please login to submit a review');
+      return;
+    }
     if (rating === 0) {
       toast.error('Please select a rating');
       return;
     }
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSubmitting(false);
-    setShowSuccess(true);
+    try {
+      await ReviewService.submitReview(user.uid, {
+        rating,
+        comment,
+        jobId: id,
+        userName: user.name || 'User',
+        userPhoto: user.photoURL || undefined,
+      });
+      setShowSuccess(true);
+    } catch (error) {
+      console.error('Failed to submit review:', error);
+      toast.error('Failed to submit review. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (showSuccess) {

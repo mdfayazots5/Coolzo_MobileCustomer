@@ -1,3 +1,4 @@
+import { BookingService } from '@/services/bookingService';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
@@ -13,7 +14,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { JOBS, TECHNICIANS, Technician, Job } from '@/lib/mockData';
+import { TECHNICIANS, Technician } from '@/lib/mockData';
 import { cn } from '@/lib/utils';
 
 const STATUS_STEPS = [
@@ -28,20 +29,28 @@ const STATUS_STEPS = [
 export default function JobTracker() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [job, setJob] = useState<Job | undefined>(JOBS.find(j => j.id === id));
-  const [technician, setTechnician] = useState<Technician | undefined>(
-    TECHNICIANS.find(t => t.id === job?.technicianId)
-  );
+  const [job, setJob] = useState<any | undefined>(null);
+  const [technician, setTechnician] = useState<Technician | undefined>(undefined);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Auto-poll simulation
   useEffect(() => {
-    const interval = setInterval(() => {
-      handleRefresh();
-    }, 60000);
-    return () => clearInterval(interval);
-  }, []);
+    if (!id) return;
+
+    const unsubscribe = BookingService.getJobStream(id, (jobData) => {
+      if (jobData) {
+        setJob(jobData);
+        setLastUpdated(new Date());
+        
+        // If technician is assigned, fetch technician details
+        if (jobData.technicianId) {
+          setTechnician(TECHNICIANS.find(t => t.id === jobData.technicianId));
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [id]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -51,7 +60,13 @@ export default function JobTracker() {
     }, 1500);
   };
 
-  if (!job) return null;
+  if (!job) {
+    return (
+      <div className="min-h-screen bg-warm-white flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-gold border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const currentStepIndex = STATUS_STEPS.findIndex(s => s.id === job.status);
 

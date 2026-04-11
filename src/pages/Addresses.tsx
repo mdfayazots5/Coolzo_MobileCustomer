@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, 
@@ -10,25 +10,75 @@ import {
   Navigation,
   CheckCircle2,
   Trash2,
-  Edit2
+  Edit2,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { USER_ADDRESSES } from '@/lib/mockData';
+import { AddressService, Address } from '@/services/addressService';
+import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 
 const Addresses = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleDelete = (id: string) => {
-    toast.success('Address deleted');
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      if (!user) return;
+      try {
+        const data = await AddressService.getAddresses(user.uid);
+        setAddresses(data);
+      } catch (error) {
+        console.error('Failed to fetch addresses:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAddresses();
+  }, [user]);
+
+  const handleDelete = async (id: string) => {
+    if (!user) return;
+    try {
+      await AddressService.deleteAddress(user.uid, id);
+      setAddresses(prev => prev.filter(a => a.id !== id));
+      toast.success('Address deleted');
+    } catch (error) {
+      toast.error('Failed to delete address');
+    }
   };
 
-  const handleSetDefault = (id: string) => {
-    toast.success('Default address updated');
+  const handleSetDefault = async (id: string) => {
+    if (!user) return;
+    try {
+      const addr = addresses.find(a => a.id === id);
+      if (!addr) return;
+      
+      // Reset all to false, set this to true
+      const updates = addresses.map(a => 
+        AddressService.saveAddress(user.uid, { ...a, isDefault: a.id === id })
+      );
+      await Promise.all(updates);
+      
+      setAddresses(prev => prev.map(a => ({ ...a, isDefault: a.id === id })));
+      toast.success('Default address updated');
+    } catch (error) {
+      toast.error('Failed to update default address');
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -56,7 +106,7 @@ const Addresses = () => {
       </div>
 
       <div className="p-6 space-y-4 pb-20">
-        {USER_ADDRESSES.map((addr) => (
+        {addresses.map((addr) => (
           <motion.div
             key={addr.id}
             initial={{ opacity: 0, y: 10 }}
@@ -75,12 +125,12 @@ const Addresses = () => {
             <div className="flex items-start gap-4 mb-6">
               <div className={cn(
                 "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0",
-                addr.label === 'Home' ? "bg-blue-50 text-blue-500" :
-                addr.label === 'Office' ? "bg-purple-50 text-purple-500" :
+                addr.type === 'Home' ? "bg-blue-50 text-blue-500" :
+                addr.type === 'Office' ? "bg-purple-50 text-purple-500" :
                 "bg-orange-50 text-orange-500"
               )}>
-                {addr.label === 'Home' ? <Home className="w-6 h-6" /> :
-                 addr.label === 'Office' ? <Briefcase className="w-6 h-6" /> :
+                {addr.type === 'Home' ? <Home className="w-6 h-6" /> :
+                 addr.type === 'Office' ? <Briefcase className="w-6 h-6" /> :
                  <Navigation className="w-6 h-6" />}
               </div>
               <div className="flex-1 pr-8">
@@ -89,9 +139,6 @@ const Addresses = () => {
                   {addr.addressLine1}, {addr.addressLine2 && `${addr.addressLine2}, `}
                   {addr.city} - {addr.pinCode}
                 </p>
-                <Badge variant="outline" className="mt-3 border-navy/10 text-navy/40 font-bold text-[8px] uppercase tracking-widest">
-                  {addr.zone}
-                </Badge>
               </div>
             </div>
 
@@ -127,7 +174,7 @@ const Addresses = () => {
           </motion.div>
         ))}
 
-        {USER_ADDRESSES.length === 0 && (
+        {addresses.length === 0 && (
           <div className="py-20 text-center">
             <div className="w-20 h-20 bg-navy/5 rounded-full flex items-center justify-center mx-auto mb-6">
               <MapPin className="w-10 h-10 text-navy/10" />

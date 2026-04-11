@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -80,6 +80,24 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 export default function App() {
+  const { isAuthReady, initialize } = useAuthStore();
+
+  useEffect(() => {
+    const unsubscribe = initialize();
+    return () => unsubscribe();
+  }, [initialize]);
+
+  if (!isAuthReady) {
+    return (
+      <div className="min-h-screen bg-navy flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin" />
+          <p className="text-gold font-display font-bold tracking-widest text-sm uppercase">Coolzo</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Router>
       <NetworkStatusBanner />

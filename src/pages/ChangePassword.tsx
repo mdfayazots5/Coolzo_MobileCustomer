@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, Lock, Eye, EyeOff, CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AuthService } from '@/services/authService';
 import { toast } from 'sonner';
 
 const ChangePassword = () => {
@@ -9,14 +10,33 @@ const ChangePassword = () => {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [passwords, setPasswords] = useState({
+    current: '',
+    new: '',
+    confirm: ''
+  });
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (passwords.new !== passwords.confirm) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    if (passwords.new.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSaving(false);
-    toast.success('Password changed successfully');
-    navigate(-1);
+    try {
+      await AuthService.changePassword(passwords.current, passwords.new);
+      toast.success('Password changed successfully');
+      navigate(-1);
+    } catch (error) {
+      toast.error('Failed to change password');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -36,6 +56,8 @@ const ChangePassword = () => {
           <div className="relative">
             <input 
               type={showCurrent ? 'text' : 'password'}
+              value={passwords.current}
+              onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
               className="w-full h-14 px-5 bg-white border border-navy/5 rounded-2xl text-sm font-bold text-navy focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all"
             />
             <button type="button" onClick={() => setShowCurrent(!showCurrent)} className="absolute right-5 top-1/2 -translate-y-1/2 text-navy/20">
@@ -49,6 +71,8 @@ const ChangePassword = () => {
           <div className="relative">
             <input 
               type={showNew ? 'text' : 'password'}
+              value={passwords.new}
+              onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
               className="w-full h-14 px-5 bg-white border border-navy/5 rounded-2xl text-sm font-bold text-navy focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all"
             />
             <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-5 top-1/2 -translate-y-1/2 text-navy/20">
@@ -61,12 +85,14 @@ const ChangePassword = () => {
           <label className="text-[10px] font-bold uppercase tracking-widest text-navy/40 ml-1">Confirm New Password</label>
           <input 
             type={showNew ? 'text' : 'password'}
+            value={passwords.confirm}
+            onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
             className="w-full h-14 px-5 bg-white border border-navy/5 rounded-2xl text-sm font-bold text-navy focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all"
           />
         </div>
 
         <Button type="submit" disabled={isSaving} className="w-full h-16 rounded-[24px] bg-gold text-navy font-bold text-lg shadow-xl shadow-gold/20 mt-10">
-          {isSaving ? 'Updating...' : 'Update Password'}
+          {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Update Password'}
         </Button>
       </form>
     </div>

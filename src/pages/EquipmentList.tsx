@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -10,20 +10,55 @@ import {
   Trash2, 
   Edit3,
   Monitor,
-  Wind
+  Wind,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { USER_EQUIPMENT, Equipment } from '@/lib/mockData';
+import { EquipmentService, Equipment } from '@/services/equipmentService';
+import { useAuthStore } from '@/store/useAuthStore';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function EquipmentList() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
+  useEffect(() => {
+    const fetchEquipment = async () => {
+      if (!user) return;
+      try {
+        const data = await EquipmentService.getEquipment(user.uid);
+        setEquipment(data);
+      } catch (error) {
+        console.error('Failed to fetch equipment:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchEquipment();
+  }, [user]);
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    toast.error("Equipment deletion coming in Phase 5!");
+    if (!user) return;
+    try {
+      await EquipmentService.deleteEquipment(user.uid, id);
+      setEquipment(prev => prev.filter(eq => eq.id !== id));
+      toast.success('Equipment deleted');
+    } catch (error) {
+      toast.error('Failed to delete equipment');
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white pb-32">
@@ -46,7 +81,7 @@ export default function EquipmentList() {
 
       {/* List */}
       <div className="px-6 py-8 space-y-4">
-        {USER_EQUIPMENT.map((eq) => (
+        {equipment.map((eq) => (
           <motion.div
             key={eq.id}
             initial={{ opacity: 0, y: 20 }}
@@ -60,7 +95,7 @@ export default function EquipmentList() {
                   <Monitor className="w-7 h-7" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-navy text-lg">{eq.brand} {eq.model}</h3>
+                  <h3 className="font-bold text-navy text-lg">{eq.brand} {eq.name}</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-navy/40 bg-navy/5 px-2 py-0.5 rounded-full">
                       {eq.type}
@@ -104,7 +139,7 @@ export default function EquipmentList() {
             <div className="pt-6 border-t border-navy/5 flex items-center justify-between">
               <div className="flex items-center gap-2 text-navy/40">
                 <Calendar className="w-4 h-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Installed {eq.installYear}</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest">Purchased {eq.purchaseDate || 'N/A'}</span>
               </div>
               <Button 
                 variant="ghost" 

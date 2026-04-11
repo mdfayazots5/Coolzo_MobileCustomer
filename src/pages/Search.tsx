@@ -1,23 +1,41 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search as SearchIcon, ArrowLeft, X, Clock, ChevronRight, BookOpen, Wrench } from 'lucide-react';
+import { Search as SearchIcon, ArrowLeft, X, Clock, ChevronRight, BookOpen, Wrench, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { SERVICES, ARTICLES } from '@/lib/mockData';
+import { CatalogService } from '@/services/catalogService';
+import { ARTICLES } from '@/lib/mockData';
 
 export default function Search() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const [serviceResults, setServiceResults] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  const serviceResults = SERVICES.filter(s => 
-    s.name.toLowerCase().includes(query.toLowerCase()) || 
-    s.description.toLowerCase().includes(query.toLowerCase())
-  );
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (query.length > 2) {
+        setIsLoading(true);
+        try {
+          const results = await CatalogService.searchServices(query);
+          setServiceResults(results);
+        } catch (error) {
+          console.error('Search failed:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setServiceResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [query]);
 
   const articleResults = ARTICLES.filter(a => 
     a.title.toLowerCase().includes(query.toLowerCase()) || 
@@ -94,8 +112,15 @@ export default function Search() {
           </div>
         ) : (
           <div className="space-y-10">
+            {/* Loading State */}
+            {isLoading && (
+              <div className="flex items-center justify-center py-10">
+                <Loader2 className="w-8 h-8 text-gold animate-spin" />
+              </div>
+            )}
+
             {/* Service Results */}
-            {serviceResults.length > 0 && (
+            {!isLoading && serviceResults.length > 0 && (
               <section>
                 <h3 className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mb-4 px-2">Services</h3>
                 <div className="space-y-3">
@@ -148,7 +173,7 @@ export default function Search() {
               </section>
             )}
 
-            {!hasResults && (
+            {!isLoading && !hasResults && (
               <div className="text-center py-20">
                 <div className="w-20 h-20 bg-navy/5 rounded-full flex items-center justify-center mx-auto mb-4">
                   <SearchIcon className="w-8 h-8 text-navy/10" />

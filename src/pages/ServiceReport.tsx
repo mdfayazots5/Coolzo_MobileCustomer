@@ -1,20 +1,53 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Download, CheckCircle2, Thermometer, Zap, Droplets, Info } from 'lucide-react';
+import { ChevronLeft, Download, CheckCircle2, Thermometer, Zap, Droplets, Info, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { JOBS } from '@/lib/mockData';
+import { BookingService } from '@/services/bookingService';
 
 const ServiceReport = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const job = JOBS.find(j => j.id === id) || JOBS[0];
+  const [report, setReport] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchReport = async () => {
+      if (!id) return;
+      try {
+        const data = await BookingService.getServiceReport(id);
+        setReport(data);
+      } catch (error) {
+        console.error('Failed to fetch service report:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchReport();
+  }, [id]);
 
   const metrics = [
     { icon: Thermometer, label: 'Cooling Temp', val: '18°C', status: 'Optimal' },
     { icon: Zap, label: 'Power Draw', val: '6.2A', status: 'Normal' },
     { icon: Droplets, label: 'Gas Level', val: '140 PSI', status: 'Full' }
   ];
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
+
+  if (!report) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
+        <h2 className="text-2xl font-display font-bold text-navy mb-4">Report Not Found</h2>
+        <Button onClick={() => navigate(-1)}>Go Back</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -30,7 +63,7 @@ const ServiceReport = () => {
             </button>
             <div>
               <h1 className="text-xl font-display font-bold text-navy">Service Report</h1>
-              <p className="text-[10px] font-bold text-navy/40 uppercase tracking-widest">{job.srNumber}</p>
+              <p className="text-[10px] font-bold text-navy/40 uppercase tracking-widest">JOB #{report.jobId}</p>
             </div>
           </div>
           <button className="w-10 h-10 rounded-full bg-navy text-gold flex items-center justify-center">
@@ -47,7 +80,7 @@ const ServiceReport = () => {
           </div>
           <div>
             <h3 className="font-bold text-green-700">Service Successful</h3>
-            <p className="text-xs text-green-600/80">Completed on {new Date(job.date).toLocaleDateString()}</p>
+            <p className="text-xs text-green-600/80">Completed on {new Date(report.completionDate).toLocaleDateString()}</p>
           </div>
         </div>
 
@@ -69,13 +102,7 @@ const ServiceReport = () => {
         <div className="space-y-4">
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-text-secondary ml-1">Work Performed</h3>
           <div className="bg-white rounded-[32px] border border-border p-6 space-y-4">
-            {[
-              'Deep cleaning of indoor & outdoor units',
-              'Filter replacement (HEPA Grade)',
-              'Drain pipe blockage cleared',
-              'Electrical wiring safety check',
-              'Refrigerant pressure optimization'
-            ].map((item, i) => (
+            {report.workDone.map((item: string, i: number) => (
               <div key={i} className="flex items-center gap-3">
                 <CheckCircle2 className="w-4 h-4 text-gold shrink-0" />
                 <span className="text-xs font-medium text-navy/60">{item}</span>
@@ -90,7 +117,7 @@ const ServiceReport = () => {
           <div className="bg-navy/5 rounded-[32px] p-6 flex gap-4">
             <Info className="w-5 h-5 text-navy/40 shrink-0" />
             <p className="text-xs text-navy/60 leading-relaxed italic">
-              "The unit is in excellent condition now. Recommend cleaning the filters every 15 days due to high dust area. Next service due in 6 months."
+              "{report.recommendations}"
             </p>
           </div>
         </div>
@@ -99,7 +126,7 @@ const ServiceReport = () => {
         <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-lg border-t border-border z-40">
           <div className="max-w-md mx-auto">
             <Button 
-              onClick={() => navigate('/app/review/' + job.id)}
+              onClick={() => navigate('/app/review/' + id)}
               className="w-full h-16 rounded-[24px] bg-gold text-navy font-bold text-lg shadow-xl shadow-gold/20"
             >
               Rate this Service

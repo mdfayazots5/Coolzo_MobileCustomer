@@ -1,18 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Calendar, Clock, AlertCircle } from 'lucide-react';
+import { ChevronLeft, Calendar, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { JOBS } from '@/lib/mockData';
+import { BookingService } from '@/services/bookingService';
 import { toast } from 'sonner';
 
 const Reschedule = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const job = JOBS.find(j => j.id === id) || JOBS[0];
-
+  const [job, setJob] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
+
+  useEffect(() => {
+    const fetchJob = async () => {
+      if (!id) return;
+      try {
+        const data = await BookingService.getBookingById(id);
+        setJob(data);
+      } catch (error) {
+        console.error('Failed to fetch job:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchJob();
+  }, [id]);
 
   const dates = [
     { day: 'Mon', date: '12', full: '2026-04-12' },
@@ -34,9 +50,26 @@ const Reschedule = () => {
       toast.error('Please select both date and time');
       return;
     }
-    toast.success('Booking Rescheduled Successfully');
-    navigate(-1);
+    
+    setIsSubmitting(true);
+    try {
+      await BookingService.rescheduleBooking(id!, { date: selectedDate, time: selectedTime });
+      toast.success('Booking Rescheduled Successfully');
+      navigate(-1);
+    } catch (error) {
+      toast.error('Failed to reschedule booking');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -111,9 +144,10 @@ const Reschedule = () => {
           <div className="max-w-md mx-auto">
             <Button 
               onClick={handleReschedule}
+              disabled={isSubmitting}
               className="w-full h-16 rounded-[24px] bg-navy text-gold font-bold text-lg shadow-card"
             >
-              Confirm New Schedule
+              {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Confirm New Schedule'}
             </Button>
           </div>
         </div>

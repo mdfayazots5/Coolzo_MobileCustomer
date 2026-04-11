@@ -1,31 +1,68 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Camera, Wind, Info } from 'lucide-react';
+import { ChevronLeft, Camera, Wind, Info, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { EquipmentService, Equipment } from '@/services/equipmentService';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const AddEditEquipment = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const isEdit = !!id;
+  const [isLoading, setIsLoading] = useState(isEdit);
 
-  const [formData, setFormData] = useState({
-    nickname: '',
+  const [formData, setFormData] = useState<Partial<Equipment>>({
+    name: '',
     brand: '',
     type: 'Split',
-    tonnage: '1.5 Ton',
+    capacity: '1.5 Ton',
     location: 'Living Room'
   });
 
+  useEffect(() => {
+    const fetchEquipment = async () => {
+      if (!id || !user) return;
+      try {
+        const equipmentList = await EquipmentService.getEquipment(user.uid);
+        const eq = equipmentList.find(e => e.id === id);
+        if (eq) {
+          setFormData(eq);
+        }
+      } catch (error) {
+        console.error('Failed to fetch equipment:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    if (isEdit) fetchEquipment();
+  }, [id, user, isEdit]);
+
   const handleSave = async () => {
-    if (!formData.nickname || !formData.brand) {
+    if (!user) return;
+    if (!formData.name || !formData.brand) {
       toast.error('Please fill in all required fields');
       return;
     }
-    toast.success(isEdit ? 'Equipment updated' : 'Equipment added to your register');
-    navigate(-1);
+    
+    try {
+      await EquipmentService.saveEquipment(user.uid, formData);
+      toast.success(isEdit ? 'Equipment updated' : 'Equipment added to your register');
+      navigate(-1);
+    } catch (error) {
+      toast.error('Failed to save equipment');
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -60,8 +97,8 @@ const AddEditEquipment = () => {
             <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary ml-1">AC Nickname *</label>
             <Input 
               placeholder="e.g. Master Bedroom AC"
-              value={formData.nickname}
-              onChange={(e) => setFormData({...formData, nickname: e.target.value})}
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
               className="h-14 rounded-2xl border-border bg-white px-5 font-medium"
             />
           </div>
@@ -78,7 +115,11 @@ const AddEditEquipment = () => {
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary ml-1">Type</label>
-              <select className="w-full h-14 rounded-2xl border border-border bg-white px-5 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-gold/50">
+              <select 
+                value={formData.type}
+                onChange={(e) => setFormData({...formData, type: e.target.value})}
+                className="w-full h-14 rounded-2xl border border-border bg-white px-5 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-gold/50"
+              >
                 <option>Split</option>
                 <option>Window</option>
                 <option>Cassette</option>
@@ -90,7 +131,11 @@ const AddEditEquipment = () => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary ml-1">Tonnage</label>
-              <select className="w-full h-14 rounded-2xl border border-border bg-white px-5 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-gold/50">
+              <select 
+                value={formData.capacity}
+                onChange={(e) => setFormData({...formData, capacity: e.target.value})}
+                className="w-full h-14 rounded-2xl border border-border bg-white px-5 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-gold/50"
+              >
                 <option>1.0 Ton</option>
                 <option>1.5 Ton</option>
                 <option>2.0 Ton</option>

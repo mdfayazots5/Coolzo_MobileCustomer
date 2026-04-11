@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, 
@@ -7,13 +7,32 @@ import {
   Shield, 
   Smartphone,
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
+import { ContentService } from '@/services/contentService';
+import { cn } from '@/lib/utils';
 
 const Changelog = () => {
   const navigate = useNavigate();
+  const [changelog, setChangelog] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchChangelog = async () => {
+      try {
+        const data = await ContentService.getChangelog();
+        setChangelog(data);
+      } catch (error) {
+        console.error('Failed to fetch changelog:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchChangelog();
+  }, []);
 
   const features = [
     {
@@ -36,6 +55,14 @@ const Changelog = () => {
     }
   ];
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
       {/* Header */}
@@ -56,8 +83,8 @@ const Changelog = () => {
           <div className="w-20 h-20 rounded-[32px] bg-gold/10 flex items-center justify-center text-gold mx-auto mb-6">
             <Sparkles className="w-10 h-10" />
           </div>
-          <h2 className="text-3xl font-display font-bold text-navy">Version 2.0</h2>
-          <p className="text-navy/40 text-[10px] font-bold uppercase tracking-widest">Released April 2026</p>
+          <h2 className="text-3xl font-display font-bold text-navy">Version {changelog[0]?.version || '2.0'}</h2>
+          <p className="text-navy/40 text-[10px] font-bold uppercase tracking-widest">Released {changelog[0]?.date || 'April 2026'}</p>
         </div>
 
         <div className="space-y-8">
@@ -83,12 +110,12 @@ const Changelog = () => {
         <div className="bg-navy/5 rounded-3xl p-6 space-y-4">
           <h4 className="text-[10px] font-bold uppercase tracking-widest text-navy/40">Other Improvements</h4>
           <ul className="space-y-3">
-            {[
+            {(changelog[0]?.changes || [
               'Improved app load time by 40%',
               'Offline support for job history',
               'New support ticket attachment system',
               'Bug fixes and performance optimizations'
-            ].map((item, i) => (
+            ]).map((item: string, i: number) => (
               <li key={i} className="flex items-center gap-3 text-xs font-medium text-navy/60">
                 <CheckCircle2 className="w-4 h-4 text-gold" />
                 {item}
@@ -113,5 +140,4 @@ const Changelog = () => {
   );
 };
 
-import { cn } from '@/lib/utils';
 export default Changelog;

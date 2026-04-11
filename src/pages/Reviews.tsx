@@ -1,19 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Star, Filter, MessageSquare, ThumbsUp } from 'lucide-react';
+import { ArrowLeft, Star, Filter, MessageSquare, ThumbsUp, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { REVIEWS, SERVICE_CATEGORIES } from '@/lib/mockData';
+import { SERVICE_CATEGORIES } from '@/lib/mockData';
+import { ReviewService, Review } from '@/services/reviewService';
 import { cn } from '@/lib/utils';
 
 export default function Reviews() {
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState('All');
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredReviews = REVIEWS.filter(review => 
-    activeFilter === 'All' || review.serviceType === activeFilter
-  );
+  useEffect(() => {
+    const fetchReviews = async () => {
+      setIsLoading(true);
+      try {
+        const data = await ReviewService.getReviews(activeFilter);
+        setReviews(data);
+      } catch (error) {
+        console.error('Failed to fetch reviews:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchReviews();
+  }, [activeFilter]);
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -74,57 +88,65 @@ export default function Reviews() {
 
       {/* Review List */}
       <div className="px-6 pb-12 space-y-4">
-        <AnimatePresence mode="popLayout">
-          {filteredReviews.map((review) => (
-            <motion.div
-              key={review.id}
-              layout
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-3xl p-6 border border-navy/5 shadow-sm"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center font-bold text-gold">
-                    {review.userName.charAt(0)}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-10 h-10 text-gold animate-spin" />
+          </div>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {reviews.map((review) => (
+              <motion.div
+                key={review.id}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-3xl p-6 border border-navy/5 shadow-sm"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center font-bold text-gold">
+                      {review.userName.charAt(0)}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-navy text-sm">{review.userName}</h4>
+                      <p className="text-[10px] text-navy/40 font-medium">
+                        {review.createdAt?.toDate ? review.createdAt.toDate().toLocaleDateString() : new Date(review.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-bold text-navy text-sm">{review.userName}</h4>
-                    <p className="text-[10px] text-navy/40 font-medium">{review.date}</p>
+                  <div className="flex gap-0.5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star 
+                        key={i} 
+                        className={cn(
+                          "w-3 h-3",
+                          i < review.rating ? "text-gold fill-gold" : "text-navy/10"
+                        )} 
+                      />
+                    ))}
                   </div>
                 </div>
-                <div className="flex gap-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <Star 
-                      key={i} 
-                      className={cn(
-                        "w-3 h-3",
-                        i < review.rating ? "text-gold fill-gold" : "text-navy/10"
-                      )} 
-                    />
-                  ))}
+
+                <p className="text-navy/70 text-sm leading-relaxed mb-4">
+                  "{review.comment}"
+                </p>
+
+                <div className="flex items-center justify-between pt-4 border-t border-navy/5">
+                  <Badge variant="secondary" className="bg-gold/5 text-gold border-none text-[10px] font-bold">
+                    {review.serviceId ? 'Service Review' : 'General'}
+                  </Badge>
+                  <button className="flex items-center gap-1.5 text-navy/40 hover:text-navy transition-colors">
+                    <ThumbsUp className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Helpful</span>
+                  </button>
                 </div>
-              </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        )}
 
-              <p className="text-navy/70 text-sm leading-relaxed mb-4">
-                "{review.comment}"
-              </p>
-
-              <div className="flex items-center justify-between pt-4 border-t border-navy/5">
-                <Badge variant="secondary" className="bg-gold/5 text-gold border-none text-[10px] font-bold">
-                  {review.serviceType}
-                </Badge>
-                <button className="flex items-center gap-1.5 text-navy/40 hover:text-navy transition-colors">
-                  <ThumbsUp className="w-3.5 h-3.5" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">Helpful</span>
-                </button>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {filteredReviews.length === 0 && (
+        {!isLoading && reviews.length === 0 && (
           <div className="text-center py-20">
             <MessageSquare className="w-12 h-12 text-navy/10 mx-auto mb-4" />
             <p className="text-navy/40 font-medium">No reviews for this category yet.</p>

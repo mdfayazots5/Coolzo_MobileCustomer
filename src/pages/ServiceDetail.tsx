@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Clock, CheckCircle2, ChevronDown, ShieldCheck, Star } from 'lucide-react';
@@ -6,16 +6,32 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useBookingStore } from '@/store/useBookingStore';
-import { SERVICES, FAQ_ITEMS } from '@/lib/mockData';
+import { FAQ_ITEMS } from '@/lib/mockData';
+import { CatalogService } from '@/services/catalogService';
 import { cn } from '@/lib/utils';
 
 export default function ServiceDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const [service, setService] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { updateBooking, setStep, resetBooking } = useBookingStore();
 
-  const service = SERVICES.find(s => s.id === id);
+  useEffect(() => {
+    const fetchService = async () => {
+      if (!id) return;
+      try {
+        const data = await CatalogService.getServiceById(id);
+        setService(data);
+      } catch (error) {
+        console.error('Failed to fetch service:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchService();
+  }, [id]);
 
   const handleBook = () => {
     if (!service) return;
@@ -27,6 +43,14 @@ export default function ServiceDetail() {
     setStep(2);
     navigate('/book');
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <div className="w-10 h-10 border-4 border-gold border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!service) {
     return (

@@ -1,11 +1,53 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { History, ArrowRight, X, Clock } from 'lucide-react';
+import { History, ArrowRight, X, Clock, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'motion/react';
+import { BookingService } from '@/services/bookingService';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const BookingDraftResume = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const [draft, setDraft] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDrafts = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const drafts = await BookingService.getDrafts(user.uid);
+        if (drafts.length > 0) {
+          setDraft(drafts[0]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch drafts:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchDrafts();
+  }, [user]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
+
+  if (!draft) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-warm-white">
+        <p className="text-navy/40">No drafts found.</p>
+        <Button onClick={() => navigate(-1)} className="mt-4">Go Back</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-warm-white">
@@ -27,7 +69,7 @@ const BookingDraftResume = () => {
 
         <h2 className="text-2xl font-display font-bold text-navy mb-4">Resume Booking?</h2>
         <p className="text-navy/40 text-sm leading-relaxed mb-10">
-          You have an unfinished booking for <span className="text-navy font-bold">AC Deep Cleaning</span>. Would you like to continue?
+          You have an unfinished booking for <span className="text-navy font-bold">{draft.serviceId.replace('-', ' ').toUpperCase()}</span>. Would you like to continue?
         </p>
 
         <div className="bg-navy/5 rounded-2xl p-4 mb-10 flex items-center gap-4 text-left">
@@ -36,7 +78,7 @@ const BookingDraftResume = () => {
           </div>
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40">Last saved</p>
-            <p className="text-xs font-bold text-navy">2 hours ago</p>
+            <p className="text-xs font-bold text-navy">{new Date(draft.createdAt).toLocaleDateString()}</p>
           </div>
         </div>
 

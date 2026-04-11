@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, 
@@ -7,25 +7,51 @@ import {
   Gift, 
   Users, 
   CheckCircle2,
-  MessageSquare
+  MessageSquare,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { USER_REFERRALS } from '@/lib/mockData';
+import { ReferralService, ReferralStats } from '@/services/referralService';
+import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 
 const ReferFriend = () => {
   const navigate = useNavigate();
-  const referralCode = 'COOLZO2026';
+  const { user } = useAuthStore();
+  const [stats, setStats] = useState<ReferralStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user) return;
+      try {
+        const data = await ReferralService.getReferralStats(user.uid);
+        setStats(data);
+      } catch (error) {
+        console.error('Failed to fetch referral stats:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStats();
+  }, [user]);
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(referralCode);
+    if (!stats) return;
+    navigator.clipboard.writeText(stats.referralCode);
     toast.success('Referral code copied!');
   };
 
-  const totalEarned = USER_REFERRALS.reduce((sum, r) => sum + r.reward, 0);
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -54,7 +80,7 @@ const ReferFriend = () => {
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center justify-between border border-white/10">
               <div>
                 <p className="text-[8px] font-bold uppercase tracking-widest text-warm-white/40 mb-1">Your Referral Code</p>
-                <p className="text-xl font-display font-bold text-gold tracking-widest">{referralCode}</p>
+                <p className="text-xl font-display font-bold text-gold tracking-widest">{stats?.referralCode}</p>
               </div>
               <button 
                 onClick={copyToClipboard}
@@ -93,11 +119,11 @@ const ReferFriend = () => {
         <div className="bg-white rounded-[32px] p-6 border border-navy/5 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mb-1">Total Credits Earned</p>
-            <p className="text-2xl font-display font-bold text-navy">₹{totalEarned}</p>
+            <p className="text-2xl font-display font-bold text-navy">₹{stats?.totalEarnings}</p>
           </div>
           <div className="text-right">
             <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mb-1">Friends Referred</p>
-            <p className="text-2xl font-display font-bold text-navy">{USER_REFERRALS.length}</p>
+            <p className="text-2xl font-display font-bold text-navy">{stats?.totalReferrals}</p>
           </div>
         </div>
 
@@ -105,7 +131,7 @@ const ReferFriend = () => {
         <div className="space-y-4">
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-navy/40 ml-1">My Referrals</h3>
           <div className="space-y-3">
-            {USER_REFERRALS.map((ref) => (
+            {stats?.referrals.map((ref) => (
               <div key={ref.id} className="bg-white rounded-2xl p-4 border border-navy/5 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-navy/5 flex items-center justify-center text-navy/40 font-bold">
@@ -123,6 +149,11 @@ const ReferFriend = () => {
                 )}
               </div>
             ))}
+            {(!stats?.referrals || stats.referrals.length === 0) && (
+              <div className="text-center py-8 bg-white rounded-3xl border border-navy/5">
+                <p className="text-navy/40 text-xs font-medium">No referrals yet. Start sharing!</p>
+              </div>
+            )}
           </div>
         </div>
 

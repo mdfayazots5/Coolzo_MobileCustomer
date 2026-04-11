@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, 
@@ -6,22 +6,47 @@ import {
   Clock, 
   ChevronRight, 
   Ticket,
-  Copy
+  Copy,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { PROMOTIONAL_OFFERS } from '@/lib/mockData';
+import { OfferService, Offer } from '@/services/offerService';
 import { toast } from 'sonner';
 
 const PromotionalOffers = () => {
   const navigate = useNavigate();
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOffers = async () => {
+      try {
+        const data = await OfferService.getOffers();
+        setOffers(data);
+      } catch (error) {
+        console.error('Failed to fetch offers:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchOffers();
+  }, []);
 
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     toast.success('Promo code copied!');
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -39,7 +64,7 @@ const PromotionalOffers = () => {
       </div>
 
       <div className="p-6 space-y-6 pb-32">
-        {PROMOTIONAL_OFFERS.map((offer) => (
+        {offers.map((offer) => (
           <motion.div
             key={offer.id}
             initial={{ opacity: 0, y: 10 }}
@@ -52,7 +77,7 @@ const PromotionalOffers = () => {
                   <Ticket className="w-6 h-6" />
                 </div>
                 <Badge className="bg-gold/10 text-gold border-none font-bold text-[10px] uppercase tracking-widest px-3 py-1">
-                  {offer.type}
+                  {offer.discountType === 'percentage' ? `${offer.discountValue}% OFF` : `₹${offer.discountValue} OFF`}
                 </Badge>
               </div>
 
@@ -89,7 +114,7 @@ const PromotionalOffers = () => {
           </motion.div>
         ))}
 
-        {PROMOTIONAL_OFFERS.length === 0 && (
+        {offers.length === 0 && (
           <div className="py-20 text-center">
             <div className="w-20 h-20 bg-navy/5 rounded-full flex items-center justify-center mx-auto mb-6">
               <Tag className="w-10 h-10 text-navy/10" />

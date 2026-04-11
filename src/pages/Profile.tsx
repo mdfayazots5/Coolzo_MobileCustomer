@@ -1,3 +1,4 @@
+import { AuthService } from '@/services/authService';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -19,18 +20,33 @@ import { toast } from 'sonner';
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
-  const [phone, setPhone] = useState('+91 98765 43210');
+  const [phone, setPhone] = useState(user?.phone || '');
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
+    if (!user) return;
+    
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSaving(false);
-    toast.success('Profile updated successfully');
+    try {
+      const updatedData = {
+        name,
+        phone,
+      };
+      
+      await AuthService.updateProfile(user.uid, updatedData);
+      
+      setUser({ ...user, ...updatedData });
+      toast.success('Profile updated successfully');
+    } catch (error) {
+      console.error('Profile update failed:', error);
+      toast.error('Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (

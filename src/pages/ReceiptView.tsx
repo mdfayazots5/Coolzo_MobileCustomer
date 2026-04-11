@@ -1,13 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Download, Share2, Printer, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, Download, Share2, Printer, CheckCircle2, ShieldCheck, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { INVOICES } from '@/lib/mockData';
+import { PaymentService } from '@/services/paymentService';
 
 const ReceiptView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const invoice = INVOICES.find(inv => inv.id === id) || INVOICES[0];
+  const [receipt, setReceipt] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchReceipt = async () => {
+      if (!id) return;
+      try {
+        const data = await PaymentService.getReceipt(id);
+        setReceipt(data);
+      } catch (error) {
+        console.error('Failed to fetch receipt:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchReceipt();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
+
+  if (!receipt) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
+        <h2 className="text-2xl font-display font-bold text-navy mb-4">Receipt Not Found</h2>
+        <Button onClick={() => navigate(-1)}>Go Back</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -48,33 +81,33 @@ const ReceiptView = () => {
               </div>
               <div>
                 <h2 className="text-2xl font-display font-bold text-navy">Payment Successful</h2>
-                <p className="text-xs text-text-secondary font-medium">Receipt #{invoice.invoiceNumber}</p>
+                <p className="text-xs text-text-secondary font-medium">Receipt #{receipt.receiptNumber}</p>
               </div>
             </div>
 
             {/* Amount */}
             <div className="bg-navy/5 rounded-3xl p-6 text-center">
               <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mb-1">Total Amount Paid</p>
-              <p className="text-4xl font-display font-bold text-navy">₹{invoice.amount.toLocaleString()}</p>
+              <p className="text-4xl font-display font-bold text-navy">₹{receipt.amount.toLocaleString()}</p>
             </div>
 
             {/* Details Grid */}
             <div className="grid grid-cols-2 gap-y-6 pt-4">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mb-1">Date</p>
-                <p className="text-sm font-bold text-navy">{new Date(invoice.date).toLocaleDateString()}</p>
+                <p className="text-sm font-bold text-navy">{new Date(receipt.paymentDate).toLocaleDateString()}</p>
               </div>
               <div className="text-right">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mb-1">Payment Method</p>
-                <p className="text-sm font-bold text-navy">UPI / GPay</p>
+                <p className="text-sm font-bold text-navy">{receipt.paymentMethod}</p>
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mb-1">Service Type</p>
-                <p className="text-sm font-bold text-navy">AC Deep Cleaning</p>
+                <p className="text-sm font-bold text-navy">AC Service</p>
               </div>
               <div className="text-right">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mb-1">Transaction ID</p>
-                <p className="text-sm font-bold text-navy">TXN_987654321</p>
+                <p className="text-sm font-bold text-navy">{receipt.transactionId}</p>
               </div>
             </div>
 

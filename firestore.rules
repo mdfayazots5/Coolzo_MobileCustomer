@@ -1,0 +1,130 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - id: string (required)
+    //   - uid: string (required)
+    //   - name: string (required)
+    //   - email: string (required, email format)
+    //   - phone: string (optional)
+    //   - membershipStatus: string (enum: ['none', 'residential', 'corporate'])
+    //   - createdAt: timestamp (required)
+    //   - hasCompletedOnboarding: bool (required)
+    //   - role: string (required, enum: ['admin', 'user'])
+    //
+    // Collection: services
+    // Document ID: {serviceId}
+    // Fields:
+    //   - id: string
+    //   - category: string
+    //   - name: string
+    //   - description: string
+    //   - duration: string
+    //   - price: number
+    //   - image: string
+    //   - included: list
+    //
+    // Collection: jobs
+    // Document ID: {jobId}
+    // Fields:
+    //   - userId: string (required)
+    //   - serviceId: string
+    //   - subServiceId: string
+    //   - equipment: map
+    //   - location: map
+    //   - slot: map
+    //   - contact: map
+    //   - status: string
+    //   - srNumber: string
+    //   - createdAt: timestamp
+    //   - price: number
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "mdfayazots5@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['id', 'uid', 'name', 'email', 'phone', 'membershipStatus', 'createdAt', 'hasCompletedOnboarding', 'role']) &&
+             data.uid == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             isValidEmail(data.email) &&
+             data.membershipStatus in ['none', 'residential', 'corporate'] &&
+             data.role in ['admin', 'user'] &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidJob(data) {
+      return hasOnlyAllowedFields(['userId', 'serviceId', 'subServiceId', 'equipment', 'location', 'slot', 'contact', 'status', 'srNumber', 'createdAt', 'price']) &&
+             data.userId == request.auth.uid &&
+             data.status in ['Booked', 'Assigned', 'En Route', 'Arrived', 'In Progress', 'Completed', 'Cancelled'] &&
+             data.price is number && data.price >= 0 &&
+             data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    (request.resource.data.role == 'user' || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    isOwner(userId) && 
+                    request.resource.data.role == resource.data.role; // Prevent self-escalation
+    }
+
+    match /services/{serviceId} {
+      allow read: if true; // Public catalog
+      allow write: if isAdmin();
+    }
+
+    match /jobs/{jobId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidJob(request.resource.data);
+      allow update: if isAuthenticated() && (
+        (resource.data.userId == request.auth.uid && isValidJob(request.resource.data) && request.resource.data.status == resource.data.status) ||
+        isAdmin()
+      );
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

@@ -1,11 +1,43 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, AlertTriangle, Zap, ShieldCheck, Clock } from 'lucide-react';
+import { ChevronLeft, AlertTriangle, Zap, ShieldCheck, Clock, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
+import { BookingService } from '@/services/bookingService';
+import { useAuthStore } from '@/store/useAuthStore';
+import { toast } from 'sonner';
 
 const EmergencyBooking = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleEmergencyDispatch = async () => {
+    if (!user) {
+      toast.error('Please login to book a service');
+      navigate('/auth-gate');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const jobId = await BookingService.createEmergencyBooking({
+        userId: user.uid,
+        serviceId: 'emergency-ac-repair',
+        subServiceId: 'emergency-ac-repair-standard',
+        location: {}, // Should come from user selection
+        contact: { name: user.name, phone: user.phone },
+        price: 999, // Base + Emergency fee
+      });
+      toast.success('Emergency dispatch confirmed!');
+      navigate(`/app/job-tracker/${jobId}`);
+    } catch (error) {
+      toast.error('Failed to confirm emergency dispatch');
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -65,10 +97,11 @@ const EmergencyBooking = () => {
 
         <div className="fixed bottom-0 left-0 right-0 p-8 bg-white/80 backdrop-blur-lg border-t border-border">
           <Button 
-            onClick={() => navigate('/book', { state: { isEmergency: true } })}
+            onClick={handleEmergencyDispatch}
+            disabled={isSubmitting}
             className="w-full h-16 rounded-[24px] bg-error text-white font-bold text-lg shadow-xl shadow-error/20"
           >
-            Confirm Emergency Dispatch
+            {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Confirm Emergency Dispatch'}
           </Button>
         </div>
       </div>

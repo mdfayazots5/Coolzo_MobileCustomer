@@ -1,24 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search as SearchIcon, Filter, ArrowLeft, Clock, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { SERVICES, SERVICE_CATEGORIES } from '@/lib/mockData';
+import { SERVICE_CATEGORIES } from '@/lib/mockData';
+import { CatalogService } from '@/services/catalogService';
 import { cn } from '@/lib/utils';
 
 export default function ServiceCatalog() {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [services, setServices] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredServices = SERVICES.filter(service => {
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const data = await CatalogService.getServices();
+        setServices(data);
+      } catch (error) {
+        console.error('Failed to fetch services:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchServices();
+  }, []);
+
+  const filteredServices = services.filter(service => {
     const matchesCategory = activeCategory === 'All' || service.category === activeCategory;
     const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                          service.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <div className="w-10 h-10 border-4 border-gold border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">

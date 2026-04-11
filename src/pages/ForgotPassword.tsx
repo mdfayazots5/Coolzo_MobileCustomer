@@ -4,27 +4,35 @@ import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AuthService } from '@/services/authService';
 import { toast } from 'sonner';
-import { ArrowLeft, MailCheck } from 'lucide-react';
+import { ArrowLeft, MailCheck, Loader2 } from 'lucide-react';
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email) return;
+    
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      await AuthService.resetPassword(email);
       setIsSubmitted(true);
-      setIsLoading(false);
       toast.success('Reset link sent to your email');
       
       // Auto navigate back to login after 5 seconds
       setTimeout(() => {
         navigate('/login');
       }, 5000);
-    }, 1500);
+    } catch (error) {
+      toast.error('Failed to send reset link');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -55,6 +63,8 @@ export default function ForgotPassword() {
                   id="email" 
                   type="email" 
                   placeholder="name@example.com" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="h-14 rounded-xl border-navy/10 focus:border-gold focus:ring-gold"
                   required
                 />
@@ -64,7 +74,7 @@ export default function ForgotPassword() {
                 disabled={isLoading}
                 className="w-full h-14 rounded-xl bg-navy text-warm-white hover:bg-navy/90 font-bold"
               >
-                {isLoading ? 'Sending...' : 'Send Reset Link'}
+                {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Send Reset Link'}
               </Button>
             </form>
           </motion.div>

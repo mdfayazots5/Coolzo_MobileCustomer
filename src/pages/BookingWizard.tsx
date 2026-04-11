@@ -14,6 +14,10 @@ import Step4DateTime from '@/components/booking/Step4DateTime';
 import Step5Contact from '@/components/booking/Step5Contact';
 import Step6Summary from '@/components/booking/Step6Summary';
 
+import { BookingService } from '@/services/bookingService';
+import { auth } from '@/lib/firebase';
+import { toast } from 'sonner';
+
 export default function BookingWizard() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -61,13 +65,37 @@ export default function BookingWizard() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (!auth.currentUser) {
+      toast.error('Please log in to complete your booking');
+      navigate('/login');
+      return;
+    }
+
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const bookingData = {
+        userId: auth.currentUser.uid,
+        serviceId: serviceId || '',
+        subServiceId: subServiceId || '',
+        equipment,
+        location: bookingLocation,
+        slot,
+        contact,
+        status: 'Booked',
+        srNumber: "CZ-" + Math.floor(100000 + Math.random() * 900000),
+        price: 499 + (slot.isEmergency ? 499 : 0), // Mock price calculation
+      } as any;
+
+      await BookingService.createBooking(bookingData);
+      toast.success('Booking confirmed!');
       navigate('/booking-confirmation');
-    }, 2000);
+    } catch (error) {
+      console.error('Booking failed:', error);
+      toast.error('Failed to create booking. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const renderStep = () => {

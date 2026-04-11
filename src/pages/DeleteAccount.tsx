@@ -1,20 +1,32 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, AlertTriangle, Trash2 } from 'lucide-react';
+import { ChevronLeft, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/useAuthStore';
+import { AuthService } from '@/services/authService';
 import { toast } from 'sonner';
 
 const DeleteAccount = () => {
   const navigate = useNavigate();
-  const { logout } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const [confirmText, setConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDelete = () => {
-    if (confirmText !== 'DELETE') return;
-    toast.error('Account deleted successfully');
-    logout();
-    navigate('/auth-gate');
+  const handleDelete = async () => {
+    if (confirmText !== 'DELETE' || !user) return;
+    
+    setIsDeleting(true);
+    try {
+      await AuthService.deleteAccount(user.uid);
+      toast.success('Account deleted successfully');
+      logout();
+      navigate('/auth-gate');
+    } catch (error) {
+      toast.error('Failed to delete account. Please try again.');
+      console.error(error);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -53,11 +65,11 @@ const DeleteAccount = () => {
 
         <div className="space-y-3">
           <Button 
-            disabled={confirmText !== 'DELETE'}
+            disabled={confirmText !== 'DELETE' || isDeleting}
             onClick={handleDelete}
             className="w-full h-16 rounded-[24px] bg-red-500 text-white font-bold text-lg shadow-xl shadow-red-500/20 disabled:opacity-30"
           >
-            Delete My Account
+            {isDeleting ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Delete My Account'}
           </Button>
           <Button 
             variant="ghost"

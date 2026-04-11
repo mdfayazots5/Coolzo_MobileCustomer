@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, 
@@ -7,18 +7,43 @@ import {
   Printer,
   Share2,
   ExternalLink,
-  ShieldCheck
+  ShieldCheck,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { INVOICES } from '@/lib/mockData';
+import { PaymentService, Invoice } from '@/services/paymentService';
 
 const InvoiceDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const invoice = INVOICES.find(inv => inv.id === id);
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchInvoice = async () => {
+      if (!id) return;
+      try {
+        const data = await PaymentService.getInvoiceById(id);
+        setInvoice(data);
+      } catch (error) {
+        console.error('Failed to fetch invoice:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchInvoice();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   if (!invoice) {
     return (
@@ -63,7 +88,7 @@ const InvoiceDetail = () => {
           )}>
             {invoice.status}
           </Badge>
-          <h2 className="text-3xl font-display font-bold text-navy mb-1">₹{invoice.amount.toLocaleString()}</h2>
+          <h2 className="text-3xl font-display font-bold text-navy mb-1">₹{invoice.total.toLocaleString()}</h2>
           <p className="text-navy/40 text-xs font-bold uppercase tracking-widest">Total Payable</p>
           
           {invoice.status !== 'Paid' && (
@@ -89,10 +114,10 @@ const InvoiceDetail = () => {
             <div className="text-right">
               <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mb-1">Service Job</p>
               <button 
-                onClick={() => navigate(`/app/job/${invoice.srNumber}`)}
+                onClick={() => navigate(`/app/job/${invoice.jobId}`)}
                 className="text-sm font-bold text-gold flex items-center justify-end gap-1"
               >
-                {invoice.srNumber}
+                {invoice.jobId}
                 <ExternalLink className="w-3 h-3" />
               </button>
             </div>
@@ -101,8 +126,8 @@ const InvoiceDetail = () => {
               <p className="text-sm font-bold text-navy">{new Date(invoice.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mb-1">Due Date</p>
-              <p className="text-sm font-bold text-navy">{new Date(invoice.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mb-1">Status</p>
+              <p className="text-sm font-bold text-navy">{invoice.status}</p>
             </div>
           </div>
         </div>
@@ -114,15 +139,18 @@ const InvoiceDetail = () => {
             {invoice.items.map((item, i) => (
               <div key={i} className="flex justify-between items-start">
                 <div className="max-w-[70%]">
-                  <p className="text-sm font-bold text-navy leading-tight">{item.name}</p>
-                  <p className="text-[10px] text-navy/40 font-medium">Qty: {item.qty}</p>
+                  <p className="text-sm font-bold text-navy leading-tight">{item.description}</p>
                 </div>
-                <p className="text-sm font-bold text-navy">₹{item.price.toLocaleString()}</p>
+                <p className="text-sm font-bold text-navy">₹{item.amount.toLocaleString()}</p>
               </div>
             ))}
             <div className="pt-4 border-t border-navy/5 flex justify-between items-center">
+              <p className="text-sm font-display font-bold text-navy">Tax</p>
+              <p className="text-sm font-bold text-navy">₹{invoice.tax.toLocaleString()}</p>
+            </div>
+            <div className="pt-2 flex justify-between items-center">
               <p className="text-sm font-display font-bold text-navy">Total Amount</p>
-              <p className="text-xl font-display font-bold text-navy">₹{invoice.amount.toLocaleString()}</p>
+              <p className="text-xl font-display font-bold text-navy">₹{invoice.total.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -142,7 +170,7 @@ const InvoiceDetail = () => {
             variant="ghost" 
             size="sm" 
             className="text-gold font-bold"
-            onClick={() => navigate('/app/support/new', { state: { srNumber: invoice.srNumber } })}
+            onClick={() => navigate('/app/support/new', { state: { jobId: invoice.jobId } })}
           >
             Contact
           </Button>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { 
@@ -11,27 +11,71 @@ import {
   Crown,
   Zap,
   Building2,
-  RefreshCw
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { USER_AMC, JOBS } from '@/lib/mockData';
+import { AMCService, AMCSubscription } from '@/services/amcService';
+import { JOBS } from '@/lib/mockData';
+import { useAuthStore } from '@/store/useAuthStore';
 import { cn } from '@/lib/utils';
 
 export default function AMCDashboard() {
   const navigate = useNavigate();
-  const amc = USER_AMC;
+  const { user } = useAuthStore();
+  const [subscription, setSubscription] = useState<AMCSubscription | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      if (!user) return;
+      try {
+        const data = await AMCService.getSubscription(user.uid);
+        setSubscription(data);
+      } catch (error) {
+        console.error('Failed to fetch AMC subscription:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSubscription();
+  }, [user]);
+
   const pastVisits = JOBS.filter(j => j.serviceType.includes('AMC') || j.status === 'Completed').slice(0, 3);
 
-  const getTierIcon = (tier: string) => {
-    switch (tier) {
-      case 'Basic': return ShieldCheck;
-      case 'Standard': return Zap;
-      case 'Premium': return Crown;
-      default: return ShieldCheck;
-    }
+  const getTierIcon = (planName: string) => {
+    if (planName?.includes('Premium')) return Crown;
+    if (planName?.includes('Standard')) return Zap;
+    return ShieldCheck;
   };
 
-  const TierIcon = getTierIcon(amc.tier);
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
+
+  if (!subscription) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center p-6 text-center">
+        <div className="w-20 h-20 bg-navy/5 rounded-full flex items-center justify-center mb-6">
+          <ShieldCheck className="w-10 h-10 text-navy/10" />
+        </div>
+        <h2 className="text-xl font-display font-bold text-navy mb-2">No Active AMC</h2>
+        <p className="text-navy/40 text-sm mb-8">Protect your appliances with our Annual Maintenance Contracts.</p>
+        <Button 
+          className="w-full h-14 rounded-2xl bg-gold text-navy font-bold"
+          onClick={() => navigate('/app/amc')}
+        >
+          View AMC Plans
+        </Button>
+      </div>
+    );
+  }
+
+  const TierIcon = getTierIcon(subscription.planName);
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white pb-32">
@@ -48,24 +92,24 @@ export default function AMCDashboard() {
           <h1 className="text-3xl font-display font-bold text-gold">My AMC</h1>
           <div className="bg-gold/20 px-4 py-1.5 rounded-full border border-gold/20 flex items-center gap-2">
             <TierIcon className="w-4 h-4 text-gold" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-gold">{amc.tier} Plan</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gold">{subscription.planName}</span>
           </div>
         </div>
         
         <p className="text-warm-white/60 text-sm max-w-xs mb-8">
-          Active until {amc.endDate}. You have {amc.totalVisits - amc.visitsUsed} visits remaining.
+          Active until {new Date(subscription.expiryDate).toLocaleDateString()}. You have {subscription.remainingVisits} visits remaining.
         </p>
 
         {/* Progress Bar */}
         <div className="space-y-3">
           <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-warm-white/40">
             <span>Visit Progress</span>
-            <span>{amc.visitsUsed} / {amc.totalVisits} Used</span>
+            <span>{subscription.totalVisits - subscription.remainingVisits} / {subscription.totalVisits} Used</span>
           </div>
           <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
             <motion.div 
               initial={{ width: 0 }}
-              animate={{ width: `${(amc.visitsUsed / amc.totalVisits) * 100}%` }}
+              animate={{ width: `${((subscription.totalVisits - subscription.remainingVisits) / subscription.totalVisits) * 100}%` }}
               className="h-full bg-gold"
             />
           </div>
@@ -76,7 +120,7 @@ export default function AMCDashboard() {
 
       <div className="px-6 py-8 space-y-10">
         {/* Next Visit Card */}
-        {amc.nextVisitDate && (
+        {subscription.nextVisitDate && (
           <section>
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mb-4 px-2">Upcoming AMC Visit</h3>
             <div className="bg-white rounded-[40px] p-8 border border-navy/5 shadow-sm relative overflow-hidden">
@@ -85,7 +129,7 @@ export default function AMCDashboard() {
                   <Calendar className="w-7 h-7" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-navy">{amc.nextVisitDate}</p>
+                  <p className="text-lg font-bold text-navy">{new Date(subscription.nextVisitDate).toLocaleDateString()}</p>
                   <p className="text-xs text-navy/40 font-medium">Scheduled Morning Slot</p>
                 </div>
               </div>
@@ -127,7 +171,7 @@ export default function AMCDashboard() {
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="font-bold text-navy text-sm">Visit #{amc.visitsUsed - i}</p>
+                    <p className="font-bold text-navy text-sm">Visit #{subscription.totalVisits - subscription.remainingVisits - i}</p>
                     <p className="text-[10px] text-navy/40 font-medium uppercase tracking-widest mt-0.5">{visit.date}</p>
                   </div>
                 </div>

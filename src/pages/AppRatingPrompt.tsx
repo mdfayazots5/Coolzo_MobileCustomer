@@ -1,11 +1,35 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, Heart, X, ArrowRight } from 'lucide-react';
+import { Star, Heart, X, ArrowRight, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
+import { ContentService } from '@/services/contentService';
+import { useAuthStore } from '@/store/useAuthStore';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const AppRatingPrompt = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const [rating, setRating] = useState(5);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!user) {
+      toast.error('Please login to provide feedback');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await ContentService.submitAppFeedback(user.uid, { rating });
+      toast.success('Thank you for your feedback!');
+      navigate(-1);
+    } catch (error) {
+      toast.error('Failed to submit feedback');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-warm-white">
@@ -32,16 +56,19 @@ const AppRatingPrompt = () => {
 
         <div className="flex justify-center gap-2 mb-10">
           {[1, 2, 3, 4, 5].map((s) => (
-            <Star key={s} className="w-8 h-8 text-gold fill-gold" />
+            <button key={s} onClick={() => setRating(s)}>
+              <Star className={cn("w-8 h-8", rating >= s ? "text-gold fill-gold" : "text-navy/10")} />
+            </button>
           ))}
         </div>
 
         <div className="space-y-3">
           <Button 
             className="w-full h-16 rounded-[24px] bg-gold text-navy font-bold text-lg shadow-xl shadow-gold/20"
-            onClick={() => {}}
+            onClick={handleSubmit}
+            disabled={isSubmitting}
           >
-            Rate on App Store
+            {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Rate on App Store'}
           </Button>
           <Button 
             variant="ghost"

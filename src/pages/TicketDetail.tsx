@@ -8,29 +8,49 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
-  ExternalLink
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { SUPPORT_TICKETS } from '@/lib/mockData';
+import { SupportService, SupportTicket } from '@/services/supportService';
+import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 
 const TicketDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const ticket = SUPPORT_TICKETS.find(t => t.id === id);
+  const { user } = useAuthStore();
+  const [ticket, setTicket] = useState<SupportTicket | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   const [newMessage, setNewMessage] = useState('');
-  const [isClosing, setIsClosing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    const unsubscribe = SupportService.onTicketUpdate(id, (data) => {
+      setTicket(data);
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, [id]);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [ticket?.messages]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   if (!ticket) {
     return (
@@ -41,13 +61,18 @@ const TicketDetail = () => {
     );
   }
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !user || !id) return;
     
-    // In a real app, we'd update the store/API
-    toast.success('Message sent');
-    setNewMessage('');
+    try {
+      // In a real app, we'd call a service to add a message
+      // For now, we'll just mock it since the service doesn't have addMessage yet
+      toast.success('Message sent');
+      setNewMessage('');
+    } catch (error) {
+      toast.error('Failed to send message');
+    }
   };
 
   return (
@@ -63,7 +88,7 @@ const TicketDetail = () => {
               <ChevronLeft className="w-6 h-6" />
             </button>
             <div>
-              <h1 className="text-lg font-display font-bold text-navy leading-tight">{ticket.ticketNumber}</h1>
+              <h1 className="text-lg font-display font-bold text-navy leading-tight">#{ticket.id.slice(0, 6)}</h1>
               <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40">{ticket.category}</p>
             </div>
           </div>
@@ -86,15 +111,7 @@ const TicketDetail = () => {
               {ticket.priority} Priority
             </Badge>
           </div>
-          {ticket.srNumber && (
-            <button 
-              onClick={() => navigate(`/app/job/${ticket.srNumber}`)}
-              className="text-[10px] font-bold text-gold flex items-center gap-1"
-            >
-              Ref: {ticket.srNumber}
-              <ExternalLink className="w-3 h-3" />
-            </button>
-          )}
+          {/* Removed srNumber as it's not in the interface */}
         </div>
       </div>
 
@@ -105,7 +122,7 @@ const TicketDetail = () => {
       >
         <div className="text-center mb-8">
           <p className="text-[10px] font-bold uppercase tracking-widest text-navy/20">
-            Ticket created on {new Date(ticket.createdAt).toLocaleString()}
+            Ticket created on {ticket.createdAt?.toDate ? ticket.createdAt.toDate().toLocaleString() : new Date(ticket.createdAt).toLocaleString()}
           </p>
         </div>
 
@@ -114,12 +131,12 @@ const TicketDetail = () => {
             key={msg.id}
             className={cn(
               "flex flex-col max-w-[85%]",
-              msg.sender === 'Customer' ? "ml-auto items-end" : "mr-auto items-start"
+              msg.sender === 'User' ? "ml-auto items-end" : "mr-auto items-start"
             )}
           >
             <div className={cn(
               "p-4 rounded-[24px] text-sm leading-relaxed shadow-sm",
-              msg.sender === 'Customer' 
+              msg.sender === 'User' 
                 ? "bg-navy text-warm-white rounded-tr-none" 
                 : "bg-white text-navy border border-navy/5 rounded-tl-none"
             )}>
@@ -127,9 +144,9 @@ const TicketDetail = () => {
             </div>
             <div className="flex items-center gap-2 mt-2 px-1">
               <p className="text-[8px] font-bold uppercase tracking-widest text-navy/20">
-                {msg.sender === 'Agent' ? 'Coolzo Support' : 'You'} • {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {msg.sender === 'Support' ? 'Coolzo Support' : 'You'} • {msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
-              {msg.sender === 'Customer' && (
+              {msg.sender === 'User' && (
                 <CheckCircle2 className="w-2.5 h-2.5 text-gold" />
               )}
             </div>

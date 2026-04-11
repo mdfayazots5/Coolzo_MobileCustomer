@@ -1,32 +1,71 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, MapPin, Navigation, Info } from 'lucide-react';
+import { ChevronLeft, MapPin, Navigation, Info, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { AddressService, Address } from '@/services/addressService';
+import { useAuthStore } from '@/store/useAuthStore';
+import { cn } from '@/lib/utils';
 
 const AddEditAddress = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const isEdit = !!id;
+  const [isLoading, setIsLoading] = useState(isEdit);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Partial<Address>>({
     label: '',
     addressLine1: '',
     addressLine2: '',
     city: 'Gurugram',
     pinCode: '',
-    isDefault: false
+    isDefault: false,
+    type: 'Home'
   });
 
+  useEffect(() => {
+    const fetchAddress = async () => {
+      if (!id || !user) return;
+      try {
+        const addresses = await AddressService.getAddresses(user.uid);
+        const addr = addresses.find(a => a.id === id);
+        if (addr) {
+          setFormData(addr);
+        }
+      } catch (error) {
+        console.error('Failed to fetch address:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    if (isEdit) fetchAddress();
+  }, [id, user, isEdit]);
+
   const handleSave = async () => {
+    if (!user) return;
     if (!formData.label || !formData.addressLine1 || !formData.pinCode) {
       toast.error('Please fill in all required fields');
       return;
     }
-    toast.success(isEdit ? 'Address updated' : 'Address added successfully');
-    navigate(-1);
+    
+    try {
+      await AddressService.saveAddress(user.uid, formData);
+      toast.success(isEdit ? 'Address updated' : 'Address added successfully');
+      navigate(-1);
+    } catch (error) {
+      toast.error('Failed to save address');
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -67,7 +106,7 @@ const AddEditAddress = () => {
               {['Home', 'Office', 'Other'].map((l) => (
                 <button
                   key={l}
-                  onClick={() => setFormData({...formData, label: l})}
+                  onClick={() => setFormData({...formData, label: l, type: l as any})}
                   className={cn(
                     "flex-1 h-12 rounded-xl border font-bold text-xs transition-all",
                     formData.label === l ? "bg-navy border-navy text-gold" : "bg-white border-border text-navy/40"
@@ -148,5 +187,4 @@ const AddEditAddress = () => {
   );
 };
 
-import { cn } from '@/lib/utils';
 export default AddEditAddress;

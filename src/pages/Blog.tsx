@@ -1,19 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Clock, Calendar, ChevronRight, BookOpen } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, ChevronRight, BookOpen, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { ARTICLES } from '@/lib/mockData';
+import { ContentService, Blog as BlogType } from '@/services/contentService';
 import { cn } from '@/lib/utils';
 
 export default function Blog() {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('All');
+  const [blogs, setBlogs] = useState<BlogType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        const data = await ContentService.getBlogs();
+        setBlogs(data);
+      } catch (error) {
+        console.error('Failed to fetch blogs:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchBlogs();
+  }, []);
 
   const categories = ['All', 'Maintenance', 'Tips', 'Guides'];
-  const filteredArticles = ARTICLES.filter(article => 
+  const filteredArticles = blogs.filter(article => 
     activeCategory === 'All' || article.category === activeCategory
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
@@ -51,16 +75,16 @@ export default function Blog() {
       {/* Article List */}
       <div className="px-6 py-8 space-y-8 pb-24">
         {/* Featured Article */}
-        {activeCategory === 'All' && (
+        {activeCategory === 'All' && filteredArticles.length > 0 && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="relative rounded-[32px] overflow-hidden aspect-[4/5] group"
-            onClick={() => navigate(`/blog/${ARTICLES[0].id}`)}
+            onClick={() => navigate(`/blog/${filteredArticles[0].id}`)}
           >
             <img 
-              src={ARTICLES[0].image} 
-              alt={ARTICLES[0].title} 
+              src={filteredArticles[0].image} 
+              alt={filteredArticles[0].title} 
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               referrerPolicy="no-referrer"
             />
@@ -68,16 +92,16 @@ export default function Blog() {
             <div className="absolute bottom-8 left-8 right-8">
               <Badge className="bg-gold text-navy border-none mb-3 font-bold">Featured</Badge>
               <h2 className="text-2xl font-display font-bold text-white mb-3 leading-tight">
-                {ARTICLES[0].title}
+                {filteredArticles[0].title}
               </h2>
               <div className="flex items-center gap-4 text-white/60 text-[10px] font-bold uppercase tracking-widest">
                 <div className="flex items-center gap-1.5">
                   <Calendar className="w-3 h-3" />
-                  <span>{ARTICLES[0].date}</span>
+                  <span>{filteredArticles[0].date}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Clock className="w-3 h-3" />
-                  <span>{ARTICLES[0].readTime} read</span>
+                  <span>5 min read</span>
                 </div>
               </div>
             </div>
@@ -114,7 +138,7 @@ export default function Blog() {
                 <div className="flex items-center gap-3 text-navy/30 text-[9px] font-bold uppercase tracking-widest">
                   <span>{article.date}</span>
                   <span>•</span>
-                  <span>{article.readTime}</span>
+                  <span>5 min read</span>
                 </div>
               </div>
             </motion.div>
