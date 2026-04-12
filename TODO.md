@@ -1,32 +1,32 @@
-# Coolzo Mobile Customer - React to Flutter Migration TODO
+# Coolzo Customer App: React → Flutter Migration TODO
 
-## Approved Plan Summary
-- Backup React project ✓ (committed)
-- Create Flutter project in `flutter_customer_app/` ✗ (SDK missing)
-- Migrate features iteratively: Auth → Booking → Dashboard → etc.
-- Delete React files after verification
-- Update docs/configs
+## Current Status
+- [x] Flutter starter structure exists (basic auth/home)
+- [ ] Full page migration (40+ pages from src/)
+- React src/ kept as reference (no deletion)
 
-## Step-by-Step Progress
+## Phase 1: Auth Flow (Priority: High)
+- [x] Created lib/pages/auth/ directory + files
+- [x] Migrated SplashScreen (lib/pages/auth/splash.dart)
+- [x] Migrated Login + OTP (lib/pages/auth/login.dart, otp.dart)
+- [ ] Enhance auth_provider.dart with Firebase integration (mock → real)
+- [ ] Test auth flow: flutter run
 
-### Phase 1: Setup (In Progress)
-- [x] Create TODO.md 
-- [x] Run `flutter doctor` → Flutter SDK NOT installed
-- [x] Git commit current React state
-- [ ] Install Flutter SDK + `flutter doctor` clean
-- [ ] `flutter create flutter_customer_app`
+## Phase 2: Core Navigation + Home (Priority: High)
+- [ ] Bottom navigation bar (Jobs, Invoices, Support like HomeShell.tsx)
+- [ ] Migrate HomeShell → lib/pages/home_shell.dart
 
-### Phase 2: Core Auth Migration
-...
+## Phase 3: Key Features (Priority: Medium)
+- [ ] Bookings: BookingWizard, Confirmation, Tracker (10+ pages)
+- [ ] AMC: Plans, Dashboard, Enrollment
+- [ ] Profile/Support/Equipment/Invoices
 
-**Blocking: Flutter SDK installation required**
+## Phase 4: Polish + Build
+- [ ] Theme/UI consistency (Material 3 matching React design)
+- [ ] flutter build apk && flutter install
+- [ ] Full testing on device
 
-**Flutter Install:**
-1. Download: https://docs.flutter.dev/get-started/install/windows
-2. Extract to C:\flutter
-3. Add C:\flutter\bin to PATH
-4. `flutter doctor`
-
-**Next: User install → verify → create project**
-
-
+## Completed Steps
+- [x] Step 1: Created TODO.md
+- [x] Step 2: Flutter pub get
+- [x] Step 3: Phase 1 Auth structure + pages + main.dart router update

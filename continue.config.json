@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "defaultProvider": "local-ollama",
+  "providers": {
+    "local-ollama": {
+      "type": "local",
+      "engine": "ollama",
+      "endpoint": "http://localhost:11434",
+      "model": "mistral/mistral-7b",
+      "timeoutMs": 120000,
+      "description": "Local Ollama Mistral model for permanent usage"
+    }
+  },
+  "project": {
+    "root": ".",
+    "include": [
+      "src/**",
+      "lib/**",
+      "**/*.ts",
+      "**/*.js",
+      "**/*.py",
+      "**/*.dart",
+      "**/*.java",
+      "**/*.cs"
+    ],
+    "exclude": [
+      "node_modules/**",
+      "build/**",
+      "dist/**",
+      ".git/**"
+    ]
+  },
+  "index": {
+    "enabled": true,
+    "batchFileCount": 200,
+    "maxFileSizeKB": 2048
+  }
+}
