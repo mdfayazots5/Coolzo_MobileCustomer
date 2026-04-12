@@ -1,4 +1,5 @@
 import { API_CONFIG } from '../config/apiConfig';
+import { apiClient } from './apiClient';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 
@@ -17,6 +18,20 @@ export interface Offer {
 export class OfferService {
   private static COLLECTION = 'offers';
 
+  private static mapOffer(offer: any): Offer {
+    return {
+      id: String(offer.promotionalOfferId),
+      code: offer.code,
+      title: offer.title,
+      description: offer.description,
+      discountType: offer.discountType,
+      discountValue: Number(offer.discountValue ?? 0),
+      minOrderValue: Number(offer.minOrderValue ?? 0),
+      expiryDate: offer.expiryDate || '',
+      category: offer.category || undefined,
+    };
+  }
+
   static async getOffers(): Promise<Offer[]> {
     if (API_CONFIG.IS_MOCK) {
       try {
@@ -27,7 +42,8 @@ export class OfferService {
         return [];
       }
     }
-    return [];
+    const offers = await apiClient.get<any[]>('/offers');
+    return offers.map(this.mapOffer);
   }
 
   static async validateCoupon(code: string, userId: string): Promise<Offer | null> {
@@ -42,6 +58,7 @@ export class OfferService {
         return null;
       }
     }
-    return null;
+    const offer = await apiClient.post<any | null>('/offers/validate-coupon', { code });
+    return offer ? this.mapOffer(offer) : null;
   }
 }

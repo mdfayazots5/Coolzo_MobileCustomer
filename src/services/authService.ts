@@ -151,7 +151,14 @@ export const AuthService = {
 
   async updateProfile(uid: string, data: Partial<UserProfile>): Promise<void> {
     if (!API_CONFIG.IS_MOCK) {
-      throw new Error('Customer profile update API is not defined in the current API contract.');
+      await apiClient.put('/customers/me/profile', {
+        customerName: data.name || '',
+        mobileNumber: data.phone || '',
+        emailAddress: data.email || '',
+        photoUrl: data.photoURL || null,
+        membershipStatus: data.membershipStatus || 'none',
+      });
+      return;
     }
 
     try {
@@ -171,7 +178,9 @@ export const AuthService = {
 
   async deleteAccount(uid: string): Promise<void> {
     if (!API_CONFIG.IS_MOCK) {
-      throw new Error('Customer account deletion API is not defined in the current API contract.');
+      await apiClient.post('/customers/me/deactivate', { reason: 'Customer requested account deletion from mobile app.' });
+      tokenStorage.clear();
+      return;
     }
 
     try {

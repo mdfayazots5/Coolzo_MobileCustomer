@@ -1,4 +1,5 @@
 import { API_CONFIG } from '../config/apiConfig';
+import { apiClient } from './apiClient';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, getDocs, query, where, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -17,6 +18,20 @@ export interface Review {
 export class ReviewService {
   private static COLLECTION = 'reviews';
 
+  private static mapReview(review: any): Review {
+    return {
+      id: String(review.customerReviewId),
+      userId: String(review.customerId),
+      userName: review.userName || '',
+      userPhoto: review.userPhoto || undefined,
+      rating: Number(review.rating ?? 0),
+      comment: review.comment || '',
+      jobId: review.bookingId ? String(review.bookingId) : undefined,
+      serviceId: review.serviceId ? String(review.serviceId) : undefined,
+      createdAt: review.createdAt,
+    };
+  }
+
   static async getReviewsByService(serviceId: string): Promise<Review[]> {
     if (API_CONFIG.IS_MOCK) {
       try {
@@ -32,7 +47,8 @@ export class ReviewService {
         return [];
       }
     }
-    return [];
+    const reviews = await apiClient.get<any[]>('/customer-reviews', { serviceId });
+    return reviews.map(this.mapReview);
   }
 
   static async getReviews(serviceType?: string): Promise<Review[]> {
@@ -49,7 +65,8 @@ export class ReviewService {
         return [];
       }
     }
-    return [];
+    const reviews = await apiClient.get<any[]>('/customer-reviews');
+    return reviews.map(this.mapReview);
   }
 
   static async submitReview(userId: string, review: Partial<Review>): Promise<void> {
@@ -65,6 +82,12 @@ export class ReviewService {
       }
       return;
     }
-    throw new Error('Customer review submission API is not defined in the current API contract.');
+    await apiClient.post('/customer-reviews', {
+      rating: review.rating || 0,
+      comment: review.comment || '',
+      bookingId: review.jobId ? Number(review.jobId) : null,
+      serviceId: review.serviceId ? Number(review.serviceId) : null,
+      customerPhotoUrl: review.userPhoto || null,
+    });
   }
 }

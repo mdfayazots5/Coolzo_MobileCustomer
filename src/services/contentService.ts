@@ -40,7 +40,7 @@ export class ContentService {
         return [];
       }
     }
-    return [];
+    return apiClient.get<Blog[]>('/cms/public/blogs');
   }
 
   static async getBlogById(id: string): Promise<Blog | null> {
@@ -53,7 +53,7 @@ export class ContentService {
         return null;
       }
     }
-    return null;
+    return apiClient.get<Blog | null>(`/cms/public/blogs/${encodeURIComponent(id)}`);
   }
 
   static async getLegalContent(type: string): Promise<LegalContent | null> {
@@ -87,7 +87,14 @@ export class ContentService {
 
   static async submitAppFeedback(userId: string, feedback: any): Promise<void> {
     if (!API_CONFIG.IS_MOCK) {
-      throw new Error('Customer app feedback API is not defined in the current API contract.');
+      await apiClient.post('/customer-app/feedback', {
+        feedbackType: feedback?.type || 'general',
+        message: feedback?.message || String(feedback ?? ''),
+        rating: feedback?.rating ?? null,
+        appVersion: feedback?.appVersion ?? null,
+        deviceInfo: feedback?.deviceInfo ?? null,
+      });
+      return;
     }
     console.log('Submitting app feedback:', feedback);
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -95,7 +102,7 @@ export class ContentService {
 
   static async getChangelog(): Promise<any[]> {
     if (!API_CONFIG.IS_MOCK) {
-      return [];
+      return apiClient.get<any[]>('/cms/public/changelog');
     }
     return [
       { version: '2.4.0', date: '2024-04-01', changes: ['Added AMC Visit Details', 'Improved Job Tracker', 'Bug fixes'] },

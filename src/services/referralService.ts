@@ -1,4 +1,5 @@
 import { API_CONFIG } from '../config/apiConfig';
+import { apiClient } from './apiClient';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -41,12 +42,6 @@ export class ReferralService {
         throw error;
       }
     }
-    return {
-      referralCode: '',
-      totalReferrals: 0,
-      totalEarnings: 0,
-      pendingReferrals: 0,
-      referrals: []
-    };
+    return apiClient.get<ReferralStats>('/referrals/me');
   }
 }

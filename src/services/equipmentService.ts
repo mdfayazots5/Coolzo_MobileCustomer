@@ -1,4 +1,5 @@
 import { API_CONFIG } from '../config/apiConfig';
+import { apiClient } from './apiClient';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, query, where, deleteDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -18,6 +19,21 @@ export interface Equipment {
 export class EquipmentService {
   private static COLLECTION = 'equipment';
 
+  private static mapEquipment(equipment: any): Equipment {
+    return {
+      id: String(equipment.customerEquipmentId),
+      userId: String(equipment.customerId),
+      name: equipment.name || '',
+      type: equipment.type || '',
+      brand: equipment.brand || '',
+      capacity: equipment.capacity || '',
+      location: equipment.location || '',
+      purchaseDate: equipment.purchaseDate || undefined,
+      lastServiceDate: equipment.lastServiceDate || undefined,
+      serialNumber: equipment.serialNumber || undefined,
+    };
+  }
+
   static async getEquipment(userId: string): Promise<Equipment[]> {
     if (API_CONFIG.IS_MOCK) {
       try {
@@ -29,7 +45,8 @@ export class EquipmentService {
         return [];
       }
     }
-    return [];
+    const equipment = await apiClient.get<any[]>('/customers/me/equipment');
+    return equipment.map(this.mapEquipment);
   }
 
   static async saveEquipment(userId: string, equipment: Partial<Equipment>): Promise<void> {
@@ -48,7 +65,22 @@ export class EquipmentService {
       }
       return;
     }
-    throw new Error('Customer equipment save API is not defined in the current API contract.');
+    const request = {
+      customerEquipmentId: equipment.id ? Number(equipment.id) : 0,
+      name: equipment.name || '',
+      type: equipment.type || '',
+      brand: equipment.brand || '',
+      capacity: equipment.capacity || '',
+      location: equipment.location || '',
+      purchaseDate: equipment.purchaseDate || null,
+      lastServiceDate: equipment.lastServiceDate || null,
+      serialNumber: equipment.serialNumber || '',
+    };
+    if (equipment.id) {
+      await apiClient.put(`/customers/me/equipment/${equipment.id}`, request);
+      return;
+    }
+    await apiClient.post('/customers/me/equipment', request);
   }
 
   static async deleteEquipment(userId: string, equipmentId: string): Promise<void> {
@@ -61,6 +93,6 @@ export class EquipmentService {
       }
       return;
     }
-    throw new Error('Customer equipment delete API is not defined in the current API contract.');
+    await apiClient.delete(`/customers/me/equipment/${equipmentId}`);
   }
 }

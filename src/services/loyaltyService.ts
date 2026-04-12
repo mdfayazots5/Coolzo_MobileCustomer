@@ -1,4 +1,5 @@
 import { API_CONFIG } from '../config/apiConfig';
+import { apiClient } from './apiClient';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { doc, getDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
 
@@ -32,7 +33,7 @@ export class LoyaltyService {
         throw error;
       }
     }
-    return { balance: 0, tier: 'Bronze', nextTierPoints: 0 };
+    return apiClient.get<LoyaltyPoints>('/loyalty/me');
   }
 
   static async getTransactions(userId: string): Promise<LoyaltyTransaction[]> {
@@ -49,6 +50,6 @@ export class LoyaltyService {
         return [];
       }
     }
-    return [];
+    return apiClient.get<LoyaltyTransaction[]>('/loyalty/me/transactions');
   }
 }

@@ -90,10 +90,6 @@ const mapBookingResponseToJob = (booking: any) => ({
 export const BookingService = {
   async createBooking(data: BookingData): Promise<string> {
     if (!API_CONFIG.IS_MOCK) {
-      if (data.slot.isEmergency) {
-        throw new Error('Emergency-specific booking fields are not defined in the current API contract.');
-      }
-
       const request = {
         serviceId: toRequiredNumber(data.serviceId, 'serviceId'),
         acTypeId: toRequiredNumber(data.equipment.acTypeId, 'acTypeId'),
@@ -111,6 +107,8 @@ export const BookingService = {
         modelName: [data.equipment.brand, data.equipment.type, data.equipment.capacity].filter(Boolean).join(' ') || undefined,
         issueNotes: data.contact.instructions || data.subServiceId || undefined,
         sourceChannel: 'MobileCustomer',
+        isEmergency: Boolean(data.slot.isEmergency),
+        emergencySurchargeAmount: data.slot.isEmergency ? 0 : null,
       };
       const result = await apiClient.post<any>('/bookings/customer', request, {
         headers: { 'X-Idempotency-Key': `customer-mobile-${Date.now()}-${Math.random().toString(36).slice(2)}` },
@@ -192,7 +190,7 @@ export const BookingService = {
 
   async getServiceReport(jobId: string): Promise<any> {
     if (!API_CONFIG.IS_MOCK) {
-      const booking = await apiClient.get<any>(`/customer-bookings/${jobId}`);
+      const booking = await apiClient.get<any>(`/customer-bookings/${jobId}/service-report`);
       return {
         jobId,
         technicianName: booking.assignedTechnicianName || 'Coolzo technician',
@@ -231,7 +229,13 @@ export const BookingService = {
 
   async createEmergencyBooking(data: any): Promise<string> {
     if (!API_CONFIG.IS_MOCK) {
-      throw new Error('Emergency booking-only request fields are not defined in the current API contract.');
+      return this.createBooking({
+        ...data,
+        slot: {
+          ...(data.slot || {}),
+          isEmergency: true,
+        },
+      });
     }
 
     try {
@@ -266,7 +270,11 @@ export const BookingService = {
 
   async rescheduleBooking(jobId: string, newSlot: any): Promise<void> {
     if (!API_CONFIG.IS_MOCK) {
-      throw new Error('Customer booking reschedule API is not defined in the current API contract.');
+      await apiClient.post(`/customer-bookings/${jobId}/reschedule`, {
+        slotAvailabilityId: toRequiredNumber(newSlot?.slotAvailabilityId ?? newSlot?.id, 'slotAvailabilityId'),
+        remarks: newSlot?.remarks || 'Rescheduled from customer mobile app',
+      });
+      return;
     }
 
     try {

@@ -61,7 +61,18 @@ export class NotificationService {
         return [];
       }
     }
-    return [];
+    const result = await apiClient.get<any>('/customer-notifications', { pageNumber: 1, pageSize: 50 });
+    const items = Array.isArray(result) ? result : result.items || [];
+    return items.map((notification: any) => ({
+      id: String(notification.customerNotificationId),
+      userId: String(notification.customerId),
+      title: notification.title,
+      message: notification.message,
+      type: notification.type || 'info',
+      isRead: Boolean(notification.isRead),
+      createdAt: notification.createdAt,
+      link: notification.link || undefined,
+    }));
   }
 
   static onNotificationsUpdate(userId: string, callback: (notifications: Notification[]) => void): Unsubscribe {
@@ -97,7 +108,7 @@ export class NotificationService {
       }
       return;
     }
-    return;
+    await apiClient.post(`/customer-notifications/${notificationId}/mark-read`, {});
   }
 
   static async getPreferences(userId: string): Promise<NotificationPreferences> {

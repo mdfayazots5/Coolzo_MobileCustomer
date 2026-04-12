@@ -1,4 +1,5 @@
 import { API_CONFIG } from '../config/apiConfig';
+import { apiClient } from './apiClient';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -30,6 +31,17 @@ export class TechnicianService {
         return null;
       }
     }
-    return null;
+    const technician = await apiClient.get<any>(`/customer-technicians/${id}`);
+    return {
+      id: String(technician.technicianId),
+      name: technician.name,
+      photoUrl: technician.photoUrl || '',
+      rating: Number(technician.rating ?? 0),
+      totalJobs: Number(technician.totalJobs ?? 0),
+      experience: technician.experience || '',
+      specialization: technician.specialization || [],
+      languages: technician.languages || [],
+      verified: Boolean(technician.verified),
+    };
   }
 }
