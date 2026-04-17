@@ -1,15 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  ChevronLeft, 
-  Plus, 
-  Search, 
-  Filter, 
-  MessageSquare, 
-  Clock, 
-  CheckCircle2,
-  AlertCircle,
-  Loader2
+  FileText
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
@@ -48,7 +40,7 @@ const SupportTickets = () => {
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
-        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+        <p className="text-gold font-bold uppercase tracking-widest animate-pulse text-xs">Loading Tickets...</p>
       </div>
     );
   }
@@ -59,12 +51,6 @@ const SupportTickets = () => {
       <div className="bg-white px-6 pt-12 pb-6 border-b border-navy/5 sticky top-0 z-30">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <button 
-              onClick={() => navigate(-1)}
-              className="w-10 h-10 rounded-full bg-navy/5 flex items-center justify-center text-navy"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
             <h1 className="text-xl font-display font-bold text-navy">Support Tickets</h1>
           </div>
           <Button 
@@ -72,7 +58,6 @@ const SupportTickets = () => {
             className="bg-gold text-navy rounded-xl font-bold h-10 px-4 gap-2"
             onClick={() => navigate('/app/support/new')}
           >
-            <Plus className="w-4 h-4" />
             New
           </Button>
         </div>
@@ -123,11 +108,9 @@ const SupportTickets = () => {
               
               <div className="flex items-center gap-4 mt-4 pt-4 border-t border-navy/5">
                 <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-navy/40">
-                  <Clock className="w-3 h-3" />
                   {ticket.createdAt?.toDate ? ticket.createdAt.toDate().toLocaleDateString() : new Date(ticket.createdAt).toLocaleDateString()}
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-navy/40">
-                  <MessageSquare className="w-3 h-3" />
                   {ticket.messages.length} Messages
                 </div>
                 {ticket.status === 'In Progress' && (
@@ -138,7 +121,6 @@ const SupportTickets = () => {
           ))
         ) : (
           <EmptyState 
-            icon={MessageSquare}
             title="No Tickets Yet"
             description="All good! No support tickets at the moment. Need help? Raise a ticket and our team will assist you."
             actionLabel="Raise New Ticket"

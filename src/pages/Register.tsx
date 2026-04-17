@@ -7,10 +7,9 @@ import { Label } from '@/components/ui/label';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { useAuthStore } from '@/store/useAuthStore';
 import { MOCK_USERS } from '@/lib/mockData';
-import { AuthService } from '@/services/authService';
-import { API_CONFIG } from '@/config/apiConfig';
 import { toast } from 'sonner';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -18,43 +17,15 @@ export default function Register() {
   const [step, setStep] = useState<'details' | 'otp'>('details');
   const [isLoading, setIsLoading] = useState(false);
   const [otpValue, setOtpValue] = useState('');
-  const [formData, setFormData] = useState({
-    customerName: '',
-    mobileNumber: '',
-    emailAddress: '',
-    password: '',
-  });
 
-  const handleSendOTP = async (e: React.FormEvent) => {
+  const handleSendOTP = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
-    if (API_CONFIG.IS_MOCK) {
-      setTimeout(() => {
-        setStep('otp');
-        setIsLoading(false);
-        toast.info('OTP sent to your mobile number');
-      }, 1500);
-      return;
-    }
-
-    try {
-      await AuthService.register({
-        customerName: formData.customerName,
-        mobileNumber: formData.mobileNumber,
-        emailAddress: formData.emailAddress,
-        password: formData.password,
-      });
-      const user = await AuthService.login(formData.emailAddress, formData.password);
-      setUser(user);
-      toast.success('Account created successfully!');
-      navigate('/app');
-    } catch (error) {
-      console.error('Registration failed:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create account');
-    } finally {
+    setTimeout(() => {
+      setStep('otp');
       setIsLoading(false);
-    }
+      toast.info('OTP sent to your mobile number');
+    }, 1500);
   };
 
   const handleVerifyOTP = (value: string) => {
@@ -95,6 +66,7 @@ export default function Register() {
               className="space-y-6"
             >
               <div>
+                <Logo className="mb-8" />
                 <h1 className="text-3xl font-display font-bold text-navy mb-2">Create Account</h1>
                 <p className="text-navy/60">Join Coolzo for premium AC services.</p>
               </div>
@@ -106,8 +78,6 @@ export default function Register() {
                     id="name" 
                     placeholder="John Doe" 
                     className="h-14 rounded-xl border-navy/10 focus:border-gold focus:ring-gold"
-                    value={formData.customerName}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, customerName: e.target.value }))}
                     required
                   />
                 </div>
@@ -120,8 +90,6 @@ export default function Register() {
                       type="tel" 
                       placeholder="98765 43210" 
                       className="pl-14 h-14 rounded-xl border-navy/10 focus:border-gold focus:ring-gold"
-                      value={formData.mobileNumber}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, mobileNumber: e.target.value }))}
                       required
                     />
                   </div>
@@ -133,8 +101,6 @@ export default function Register() {
                     type="email" 
                     placeholder="name@example.com" 
                     className="h-14 rounded-xl border-navy/10 focus:border-gold focus:ring-gold"
-                    value={formData.emailAddress}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, emailAddress: e.target.value }))}
                     required
                   />
                 </div>
@@ -145,8 +111,6 @@ export default function Register() {
                     type="password" 
                     placeholder="••••••••" 
                     className="h-14 rounded-xl border-navy/10 focus:border-gold focus:ring-gold"
-                    value={formData.password}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
                     required
                   />
                 </div>
@@ -157,7 +121,7 @@ export default function Register() {
                     disabled={isLoading}
                     className="w-full h-14 rounded-xl bg-navy text-warm-white hover:bg-navy/90 font-bold"
                   >
-                    {isLoading ? (API_CONFIG.IS_MOCK ? 'Sending OTP...' : 'Creating Account...') : (API_CONFIG.IS_MOCK ? 'Send OTP' : 'Create Account')}
+                    {isLoading ? 'Sending OTP...' : 'Send OTP'}
                   </Button>
                 </div>
               </form>

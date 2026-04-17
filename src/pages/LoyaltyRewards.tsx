@@ -149,11 +149,13 @@ const LoyaltyRewards = () => {
                     "w-10 h-10 rounded-xl flex items-center justify-center",
                     item.type === 'earn' ? "bg-green-50 text-green-500" : "bg-red-50 text-red-500"
                   )}>
-                    <ArrowUpRight className={cn("w-5 h-5", item.type === 'spend' && "rotate-180")} />
+                    <ArrowUpRight className={cn("w-5 h-5", item.type === 'redeem' && "rotate-180")} />
                   </div>
                   <div>
                     <p className="text-sm font-bold text-navy">{item.description}</p>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-navy/20">{new Date(item.date).toLocaleDateString()}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-navy/20">
+                      {item.createdAt?.toDate ? item.createdAt.toDate().toLocaleDateString() : new Date(item.createdAt).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
                 <p className={cn(

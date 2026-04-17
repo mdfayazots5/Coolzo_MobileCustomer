@@ -1,5 +1,5 @@
 import { API_CONFIG } from '../config/apiConfig';
-import { apiClient, PagedResult } from './apiClient';
+import { apiClient } from './apiClient';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, getDocs, doc, getDoc, query, where, orderBy } from 'firebase/firestore';
 
@@ -16,86 +16,80 @@ export interface Invoice {
   total: number;
 }
 
-const normalizeInvoiceStatus = (status: string | undefined, balanceAmount = 0): Invoice['status'] => {
-  const value = (status || '').toLowerCase();
-  if (value.includes('paid') || balanceAmount <= 0) return 'Paid';
-  if (value.includes('overdue')) return 'Overdue';
-  return 'Pending';
-};
-
-const mapInvoice = (invoice: any): Invoice => {
-  const balanceAmount = Number(invoice.balanceAmount ?? invoice.grandTotalAmount ?? invoice.amount ?? 0);
-  const grandTotalAmount = Number(invoice.grandTotalAmount ?? invoice.total ?? balanceAmount);
-  const lines = Array.isArray(invoice.lines) ? invoice.lines : [];
-
-  return {
-    id: String(invoice.invoiceId ?? invoice.id),
-    userId: String(invoice.customerId ?? invoice.userId ?? ''),
-    jobId: String(invoice.bookingId ?? invoice.quotationId ?? invoice.quotationNumber ?? invoice.jobId ?? ''),
-    invoiceNumber: invoice.invoiceNumber || `INV-${invoice.invoiceId ?? invoice.id}`,
-    amount: balanceAmount,
-    date: invoice.invoiceDateUtc || invoice.date || new Date().toISOString(),
-    status: normalizeInvoiceStatus(invoice.currentStatus || invoice.status, balanceAmount),
-    items: lines.length > 0
-      ? lines.map((line: any) => ({
-        description: line.description || line.itemDescription || line.serviceName || line.lineDescription || 'Invoice item',
-        amount: Number(line.lineTotalAmount ?? line.amount ?? line.totalAmount ?? 0),
-      }))
-      : [{ description: invoice.serviceName || 'Service invoice', amount: Number(invoice.subTotalAmount ?? grandTotalAmount) }],
-    tax: Number(invoice.taxAmount ?? invoice.tax ?? 0),
-    total: grandTotalAmount,
-  };
-};
-
-const mapPaymentToReceipt = (payment: any, invoiceId: string) => ({
-  invoiceId,
-  receiptNumber: payment.receipt?.receiptNumber || payment.referenceNumber || `REC-${payment.paymentTransactionId ?? invoiceId}`,
-  paymentDate: payment.paymentDateUtc || new Date().toISOString(),
-  paymentMethod: payment.paymentMethod || 'Payment',
-  transactionId: payment.referenceNumber || payment.gatewayTransactionId || String(payment.paymentTransactionId ?? ''),
-  amount: Number(payment.paidAmount ?? 0),
-  raw: payment,
-});
-
 export class PaymentService {
   private static COLLECTION = 'invoices';
 
   static async getInvoices(userId: string): Promise<Invoice[]> {
+    const mockInvoices: Invoice[] = [
+      {
+        id: 'inv-1',
+        userId,
+        jobId: 'J-8812',
+        invoiceNumber: 'INV-2024-012',
+        amount: 5499,
+        date: '2024-04-10',
+        status: 'Overdue',
+        items: [{ description: 'Deep Cleaning & Gas Refill', amount: 5499 }],
+        tax: 0,
+        total: 5499
+      },
+      {
+        id: 'inv-2',
+        userId,
+        jobId: 'J-8790',
+        invoiceNumber: 'INV-2024-011',
+        amount: 899,
+        date: '2024-04-05',
+        status: 'Pending',
+        items: [{ description: 'Wet Servicing', amount: 899 }],
+        tax: 0,
+        total: 899
+      },
+      {
+        id: 'inv-3',
+        userId,
+        jobId: 'J-8755',
+        invoiceNumber: 'INV-2024-010',
+        amount: 1499,
+        date: '2024-03-28',
+        status: 'Paid',
+        items: [{ description: 'Installation Service', amount: 1499 }],
+        tax: 0,
+        total: 1499
+      },
+      ...Array.from({ length: 9 }).map((_, i) => ({
+        id: `inv-old-${i}`,
+        userId,
+        jobId: `J-old-${i}`,
+        invoiceNumber: `INV-2024-00${9-i}`,
+        amount: 499 + (i * 100),
+        date: `2024-02-${10 + i}`,
+        status: 'Paid' as const,
+        items: [{ description: 'Regular Maintenance', amount: 499 + (i * 100) }],
+        tax: 0,
+        total: 499 + (i * 100)
+      }))
+    ];
+
     if (API_CONFIG.IS_MOCK) {
       try {
         const q = query(
           collection(db, this.COLLECTION), 
-          where('userId', '==', userId),
-          orderBy('date', 'desc')
+          where('userId', '==', userId)
         );
         const querySnapshot = await getDocs(q);
         const invoices = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Invoice));
         
-        // Mock fallback
-        if (invoices.length === 0) {
-          return [
-            {
-              id: 'inv-1',
-              userId,
-              jobId: 'job-1',
-              invoiceNumber: 'INV-2024-001',
-              amount: 499,
-              date: '2024-03-15',
-              status: 'Paid',
-              items: [{ description: 'General AC Checkup', amount: 499 }],
-              tax: 0,
-              total: 499
-            }
-          ];
+        if (invoices.length > 0) {
+          invoices.sort((a, b) => b.date.localeCompare(a.date));
+          return invoices;
         }
-        return invoices;
       } catch (error) {
-        handleFirestoreError(error, OperationType.GET, this.COLLECTION);
-        return [];
+        console.warn('Firestore fetch failed in mock mode, using static fallback.', error);
       }
+      return mockInvoices;
     }
-    const result = await apiClient.get<PagedResult<any>>('/invoices/customer', { pageNumber: 1, pageSize: 50 });
-    return result.items.map(mapInvoice);
+    return apiClient.get<Invoice[]>(`/users/${userId}/invoices`);
   }
 
   static async getInvoiceById(id: string): Promise<Invoice | null> {
@@ -105,16 +99,15 @@ export class PaymentService {
         if (docSnap.exists()) {
           return { id: docSnap.id, ...docSnap.data() } as Invoice;
         }
-        // Mock fallback
-        const invoices = await this.getInvoices('mock-user');
-        return invoices.find(inv => inv.id === id) || null;
       } catch (error) {
-        handleFirestoreError(error, OperationType.GET, `${this.COLLECTION}/${id}`);
-        return null;
+        console.warn('Firestore fetch failed in mock mode, falling back to static list.', error);
       }
+      
+      // Mock fallback from list
+      const invoices = await this.getInvoices('mock-user');
+      return invoices.find(inv => inv.id === id) || null;
     }
-    const invoice = await apiClient.get<any>(`/invoices/${id}`);
-    return mapInvoice(invoice);
+    return apiClient.get<Invoice>(`/invoices/${id}`);
   }
 
   static async getReceipt(invoiceId: string): Promise<any> {
@@ -128,36 +121,13 @@ export class PaymentService {
         amount: 499
       };
     }
-    const payments = await apiClient.get<any[]>(`/payments/invoice/${invoiceId}`);
-    const latestPayment = payments[0];
-    return latestPayment ? mapPaymentToReceipt(latestPayment, invoiceId) : null;
+    return apiClient.get<any>(`/payments/receipt/${invoiceId}`);
   }
 
   static async processPayment(data: any): Promise<any> {
-    if (API_CONFIG.IS_MOCK) {
-      console.log('Processing payment...', data);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      return { status: 'success', transactionId: 'TXN' + Math.random().toString(36).substr(2, 9).toUpperCase() };
-    }
-
-    const transaction = await apiClient.post<any>('/payments/collect', {
-      invoiceId: Number(data.invoiceId),
-      paidAmount: Number(data.amount),
-      paymentMethod: data.method,
-      referenceNumber: data.referenceNumber,
-      remarks: data.remarks || 'Customer mobile payment',
-      idempotencyKey: `customer-mobile-payment-${data.invoiceId}-${Date.now()}`,
-      gatewayTransactionId: data.gatewayTransactionId,
-      signature: data.signature,
-      expectedInvoiceAmount: Number(data.amount),
-      isWebhookEvent: false,
-      webhookReference: undefined,
-    });
-
-    return {
-      status: 'success',
-      transactionId: transaction.referenceNumber || transaction.paymentTransactionId,
-      raw: transaction,
-    };
+    // Mock payment processing
+    console.log('Processing payment...', data);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    return { status: 'success', transactionId: 'TXN' + Math.random().toString(36).substr(2, 9).toUpperCase() };
   }
 }

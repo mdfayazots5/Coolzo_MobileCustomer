@@ -6,8 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AMCService, AMCPlan } from '@/services/amcService';
 import { cn } from '@/lib/utils';
-import { API_CONFIG } from '@/config/apiConfig';
-import { toast } from 'sonner';
 
 export default function AMCPlanDetail() {
   const { id } = useParams();
@@ -126,13 +124,7 @@ export default function AMCPlanDetail() {
         <div className="max-w-md mx-auto">
           <Button 
             className="w-full h-14 rounded-2xl bg-gold text-navy hover:bg-gold/90 font-bold text-lg shadow-lg shadow-gold/20"
-            onClick={() => {
-              if (!API_CONFIG.IS_MOCK) {
-                toast.error('AMC enrollment API is not available yet.');
-                return;
-              }
-              navigate('/register');
-            }}
+            onClick={() => navigate('/register')}
           >
             Enroll in {plan.name} Plan
           </Button>

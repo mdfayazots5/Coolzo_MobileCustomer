@@ -20,12 +20,6 @@ export interface LegalContent {
   lastUpdated: string;
 }
 
-const mapCMSBlockToLegalContent = (block: any): LegalContent => ({
-  title: block.title || block.blockKey || 'Content',
-  content: block.content || block.summary || '',
-  lastUpdated: block.lastUpdated || block.dateCreated || new Date().toISOString(),
-});
-
 export class ContentService {
   private static BLOGS_COLLECTION = 'blogs';
   private static LEGAL_COLLECTION = 'legal';
@@ -40,7 +34,7 @@ export class ContentService {
         return [];
       }
     }
-    return apiClient.get<Blog[]>('/cms/public/blogs');
+    return apiClient.get<Blog[]>('/content/blogs');
   }
 
   static async getBlogById(id: string): Promise<Blog | null> {
@@ -53,7 +47,7 @@ export class ContentService {
         return null;
       }
     }
-    return apiClient.get<Blog | null>(`/cms/public/blogs/${encodeURIComponent(id)}`);
+    return apiClient.get<Blog>(`/content/blogs/${id}`);
   }
 
   static async getLegalContent(type: string): Promise<LegalContent | null> {
@@ -66,8 +60,7 @@ export class ContentService {
         return null;
       }
     }
-    const block = await apiClient.get<any>(`/cms/public/service-content/${encodeURIComponent(type)}`);
-    return mapCMSBlockToLegalContent(block);
+    return apiClient.get<LegalContent>(`/content/legal/${type}`);
   }
 
   static async getAboutContent(): Promise<any> {
@@ -82,41 +75,35 @@ export class ContentService {
         ]
       };
     }
-    return apiClient.get<any>('/cms/public/home');
+    return apiClient.get<any>('/content/about');
   }
 
   static async submitAppFeedback(userId: string, feedback: any): Promise<void> {
-    if (!API_CONFIG.IS_MOCK) {
-      await apiClient.post('/customer-app/feedback', {
-        feedbackType: feedback?.type || 'general',
-        message: feedback?.message || String(feedback ?? ''),
-        rating: feedback?.rating ?? null,
-        appVersion: feedback?.appVersion ?? null,
-        deviceInfo: feedback?.deviceInfo ?? null,
-      });
+    if (API_CONFIG.IS_MOCK) {
+      console.log('Mock: Submitting app feedback:', feedback);
+      await new Promise(resolve => setTimeout(resolve, 1000));
       return;
     }
-    console.log('Submitting app feedback:', feedback);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    return apiClient.post(`/users/${userId}/feedback`, feedback);
   }
 
   static async getChangelog(): Promise<any[]> {
-    if (!API_CONFIG.IS_MOCK) {
-      return apiClient.get<any[]>('/cms/public/changelog');
+    if (API_CONFIG.IS_MOCK) {
+      return [
+        { version: '2.4.0', date: '2024-04-01', changes: ['Added AMC Visit Details', 'Improved Job Tracker', 'Bug fixes'] },
+        { version: '2.3.5', date: '2024-03-15', changes: ['New Referral System', 'UI enhancements'] }
+      ];
     }
-    return [
-      { version: '2.4.0', date: '2024-04-01', changes: ['Added AMC Visit Details', 'Improved Job Tracker', 'Bug fixes'] },
-      { version: '2.3.5', date: '2024-03-15', changes: ['New Referral System', 'UI enhancements'] }
-    ];
+    return apiClient.get<any[]>('/content/changelog');
   }
 
   static async getFAQ(): Promise<any[]> {
-    if (!API_CONFIG.IS_MOCK) {
-      return apiClient.get<any[]>('/cms/public/faqs');
+    if (API_CONFIG.IS_MOCK) {
+      return [
+        { question: 'How do I book a service?', answer: 'You can book a service from the home dashboard or catalog.' },
+        { question: 'What is AMC?', answer: 'AMC stands for Annual Maintenance Contract, which covers regular checkups.' }
+      ];
     }
-    return [
-      { question: 'How do I book a service?', answer: 'You can book a service from the home dashboard or catalog.' },
-      { question: 'What is AMC?', answer: 'AMC stands for Annual Maintenance Contract, which covers regular checkups.' }
-    ];
+    return apiClient.get<any[]>('/content/faq');
   }
 }

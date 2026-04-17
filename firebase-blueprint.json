@@ -65,6 +65,24 @@
         "installYear": { "type": "number" },
         "serialNumber": { "type": "string" }
       }
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Billing and payment records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "jobId": { "type": "string" },
+        "invoiceNumber": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["Paid", "Pending", "Overdue"] },
+        "items": { "type": "array", "items": { "type": "object" } },
+        "tax": { "type": "number" },
+        "total": { "type": "number" }
+      },
+      "required": ["userId", "invoiceNumber", "amount", "date", "status"]
     }
   },
   "firestore": {
@@ -83,6 +101,10 @@
     "/users/{userId}/equipment/{equipmentId}": {
       "schema": "Equipment",
       "description": "User's registered equipment"
+    },
+    "/invoices/{invoiceId}": {
+      "schema": "Invoice",
+      "description": "Billing records"
     }
   }
 }

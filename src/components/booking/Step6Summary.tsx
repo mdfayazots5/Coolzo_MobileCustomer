@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { useBookingStore } from '@/store/useBookingStore';
 import { cn } from '@/lib/utils';
+import { SERVICES } from '@/lib/mockData';
 import { 
   CheckCircle2, 
   MapPin, 
@@ -20,14 +21,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 
 export default function Step6Summary() {
-  const { serviceName, servicePrice, equipment, location, slot, contact, pricing } = useBookingStore();
-  const basePrice = servicePrice || pricing.basePrice || 0;
+  const { serviceId, equipment, location, slot, contact, pricing } = useBookingStore();
+  const service = SERVICES.find(s => s.id === serviceId);
 
   const summaryItems = [
     { 
       icon: Wrench, 
       label: 'Service', 
-      value: serviceName || 'Selected service',
+      value: service?.name, 
       subValue: equipment.brand ? `${equipment.brand} ${equipment.type} (${equipment.capacity})` : null 
     },
     { 
@@ -74,7 +75,7 @@ export default function Step6Summary() {
           <div className="space-y-4">
             <div className="flex justify-between items-center text-sm">
               <span className="text-warm-white/60">Base Service Fee</span>
-              <span className="font-bold">₹{basePrice}</span>
+              <span className="font-bold">₹{service?.price || 0}</span>
             </div>
             {slot.isEmergency && (
               <div className="flex justify-between items-center text-sm text-red-400">
@@ -94,7 +95,7 @@ export default function Step6Summary() {
             <div className="flex justify-between items-end">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-gold">Estimated Total</p>
-                <p className="text-3xl font-display font-bold">₹{basePrice + (slot.isEmergency ? 499 : 0) - (contact.couponCode ? 200 : 0)}</p>
+                <p className="text-3xl font-display font-bold">₹{(service?.price || 0) + (slot.isEmergency ? 499 : 0) - (contact.couponCode ? 200 : 0)}</p>
               </div>
               <div className="text-right">
                 <Badge className="bg-gold/20 text-gold border-none text-[8px] font-bold uppercase tracking-widest">Pay After Service</Badge>

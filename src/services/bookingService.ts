@@ -12,110 +12,27 @@ import {
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { API_CONFIG } from '../config/apiConfig';
-import { apiClient, PagedResult } from './apiClient';
+import { apiClient } from './apiClient';
 
 export interface BookingData {
   userId: string;
   serviceId: string;
   subServiceId: string;
-  equipment: {
-    brand?: string;
-    brandId?: string | number | null;
-    type?: string;
-    acTypeId?: string | number | null;
-    capacity?: string;
-    tonnageId?: string | number | null;
-    units?: number;
-  };
-  location: {
-    addressLine1?: string;
-    addressLine2?: string;
-    city?: string;
-    pinCode?: string;
-    label?: string;
-    zoneId?: string | number | null;
-  };
-  slot: {
-    date?: string | null;
-    timeWindow?: string | null;
-    slotAvailabilityId?: string | number | null;
-    isEmergency?: boolean;
-  };
-  contact: {
-    fullName?: string;
-    mobile?: string;
-    email?: string;
-    instructions?: string;
-  };
+  equipment: any;
+  location: any;
+  slot: any;
+  contact: any;
   status: string;
   srNumber: string;
   price: number;
 }
 
-const toRequiredNumber = (value: unknown, field: string) => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error(`${field} is required before creating a booking.`);
-  }
-  return parsed;
-};
-
-const normalizeStatus = (status: string | undefined) => {
-  const value = (status || 'Booked').toLowerCase();
-  if (value.includes('cancel')) return 'Cancelled';
-  if (value.includes('complete') || value.includes('closed')) return 'Completed';
-  if (value.includes('progress')) return 'In Progress';
-  if (value.includes('arrived') || value.includes('reached')) return 'Arrived';
-  if (value.includes('route')) return 'En Route';
-  if (value.includes('assign')) return 'Assigned';
-  return 'Booked';
-};
-
-const mapBookingResponseToJob = (booking: any) => ({
-  id: String(booking.bookingId),
-  srNumber: booking.serviceRequestNumber || booking.bookingReference || `BK-${booking.bookingId}`,
-  serviceType: booking.serviceName,
-  status: normalizeStatus(booking.operationalStatus || booking.status),
-  date: booking.slotDate,
-  timeSlot: booking.slotLabel || '',
-  technicianId: booking.assignedTechnicianId ? String(booking.assignedTechnicianId) : undefined,
-  address: booking.addressSummary || '',
-  price: Number(booking.invoiceGrandTotalAmount ?? booking.estimatedPrice ?? 0),
-  isEmergency: false,
-  hasEstimate: Boolean(booking.quotationId && booking.quotationStatus !== 'Approved'),
-  estimateApproved: booking.quotationStatus === 'Approved',
-  raw: booking,
-});
-
 export const BookingService = {
   async createBooking(data: BookingData): Promise<string> {
-    if (!API_CONFIG.IS_MOCK) {
-      const request = {
-        serviceId: toRequiredNumber(data.serviceId, 'serviceId'),
-        acTypeId: toRequiredNumber(data.equipment.acTypeId, 'acTypeId'),
-        tonnageId: toRequiredNumber(data.equipment.tonnageId, 'tonnageId'),
-        brandId: toRequiredNumber(data.equipment.brandId, 'brandId'),
-        slotAvailabilityId: toRequiredNumber(data.slot.slotAvailabilityId, 'slotAvailabilityId'),
-        customerName: data.contact.fullName || '',
-        mobileNumber: data.contact.mobile || '',
-        emailAddress: data.contact.email || undefined,
-        addressLine1: data.location.addressLine1 || '',
-        addressLine2: data.location.addressLine2 || undefined,
-        cityName: data.location.city || 'Mumbai',
-        pincode: data.location.pinCode || '',
-        addressLabel: data.location.label || undefined,
-        modelName: [data.equipment.brand, data.equipment.type, data.equipment.capacity].filter(Boolean).join(' ') || undefined,
-        issueNotes: data.contact.instructions || data.subServiceId || undefined,
-        sourceChannel: 'MobileCustomer',
-        isEmergency: Boolean(data.slot.isEmergency),
-        emergencySurchargeAmount: data.slot.isEmergency ? 0 : null,
-      };
-      const result = await apiClient.post<any>('/bookings/customer', request, {
-        headers: { 'X-Idempotency-Key': `customer-mobile-${Date.now()}-${Math.random().toString(36).slice(2)}` },
-      });
-      return String(result.bookingReference || result.bookingId);
+    if (API_CONFIG.IS_MOCK) {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      return 'mock-job-id-' + Math.random().toString(36).substr(2, 9);
     }
-
     try {
       const docRef = await addDoc(collection(db, 'jobs'), {
         ...data,
@@ -129,11 +46,22 @@ export const BookingService = {
   },
 
   async getBookingById(id: string): Promise<any> {
-    if (!API_CONFIG.IS_MOCK) {
-      const booking = await apiClient.get<any>(`/customer-bookings/${id}`);
-      return mapBookingResponseToJob(booking);
+    if (API_CONFIG.IS_MOCK) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return {
+        id,
+        userId: 'demo-user-id',
+        serviceId: 'ac-service',
+        subServiceId: 'deep-cleaning',
+        status: 'Scheduled',
+        srNumber: 'SR123456',
+        price: 499,
+        createdAt: new Date().toISOString(),
+        slot: { date: '2024-04-15', time: '10:00 AM' },
+        equipment: { name: 'Master Bedroom AC', brand: 'Daikin' },
+        location: { label: 'Home', addressLine1: 'Apartment 402, Block B' }
+      };
     }
-
     try {
       const docSnap = await getDoc(doc(db, 'jobs', id));
       if (docSnap.exists()) {
@@ -147,16 +75,22 @@ export const BookingService = {
   },
 
   getLiveJobs(userId: string, callback: (jobs: any[]) => void) {
-    if (!API_CONFIG.IS_MOCK) {
-      apiClient.get<PagedResult<any>>('/customer-bookings', { pageNumber: 1, pageSize: 50 })
-        .then((result) => callback(result.items.map(mapBookingResponseToJob)))
-        .catch((error) => {
-          console.error('Failed to fetch customer bookings:', error);
-          callback([]);
-        });
+    if (API_CONFIG.IS_MOCK) {
+      const mockJobs = [
+        {
+          id: 'mock-job-1',
+          userId,
+          serviceId: 'ac-service',
+          status: 'In Progress',
+          srNumber: 'SR987654',
+          price: 599,
+          createdAt: new Date().toISOString(),
+          slot: { date: '2024-04-12', time: '02:00 PM' }
+        }
+      ];
+      callback(mockJobs);
       return () => {};
     }
-
     const q = query(
       collection(db, 'jobs'),
       where('userId', '==', userId),
@@ -172,13 +106,20 @@ export const BookingService = {
   },
 
   getJobStream(jobId: string, callback: (job: any) => void) {
-    if (!API_CONFIG.IS_MOCK) {
-      this.getBookingById(jobId)
-        .then(callback)
-        .catch((error) => console.error('Failed to fetch booking detail:', error));
+    if (API_CONFIG.IS_MOCK) {
+      const mockJob = {
+        id: jobId,
+        userId: 'demo-user-id',
+        serviceId: 'ac-service',
+        status: 'Technician on the way',
+        srNumber: 'SR123456',
+        price: 499,
+        createdAt: new Date().toISOString(),
+        technician: { name: 'Rahul Sharma', photo: 'https://picsum.photos/seed/tech1/200' }
+      };
+      callback(mockJob);
       return () => {};
     }
-
     return onSnapshot(doc(db, 'jobs', jobId), (docSnap) => {
       if (docSnap.exists()) {
         callback({ id: docSnap.id, ...docSnap.data() });
@@ -189,25 +130,8 @@ export const BookingService = {
   },
 
   async getServiceReport(jobId: string): Promise<any> {
-    if (!API_CONFIG.IS_MOCK) {
-      const booking = await apiClient.get<any>(`/customer-bookings/${jobId}/service-report`);
-      return {
-        jobId,
-        technicianName: booking.assignedTechnicianName || 'Coolzo technician',
-        completionDate: booking.completionDateUtc || booking.bookingDateUtc,
-        workDone: booking.lines?.map((line: any) => line.description || line.serviceName).filter(Boolean) || [],
-        recommendations: booking.completionSummary || 'Service report details will appear after job completion.',
-        rating: null,
-        raw: booking,
-      };
-    }
-
-    try {
-      const docSnap = await getDoc(doc(db, 'service_reports', jobId));
-      if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() };
-      }
-      // Mock fallback
+    if (API_CONFIG.IS_MOCK) {
+      await new Promise(resolve => setTimeout(resolve, 800));
       return {
         jobId,
         technicianName: 'Rahul Sharma',
@@ -221,6 +145,13 @@ export const BookingService = {
         recommendations: 'Replace air filter in next 3 months.',
         rating: 5
       };
+    }
+    try {
+      const docSnap = await getDoc(doc(db, 'service_reports', jobId));
+      if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() };
+      }
+      return null;
     } catch (error) {
       handleFirestoreError(error, OperationType.GET, `service_reports/${jobId}`);
       return null;
@@ -228,16 +159,10 @@ export const BookingService = {
   },
 
   async createEmergencyBooking(data: any): Promise<string> {
-    if (!API_CONFIG.IS_MOCK) {
-      return this.createBooking({
-        ...data,
-        slot: {
-          ...(data.slot || {}),
-          isEmergency: true,
-        },
-      });
+    if (API_CONFIG.IS_MOCK) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return 'mock-emergency-job-id';
     }
-
     try {
       const docRef = await addDoc(collection(db, 'jobs'), {
         ...data,
@@ -253,12 +178,10 @@ export const BookingService = {
   },
 
   async approveEstimate(jobId: string, estimateId: string): Promise<void> {
-    if (!API_CONFIG.IS_MOCK) {
-      const quotationId = toRequiredNumber(estimateId, 'quotationId');
-      await apiClient.post(`/quotations/${quotationId}/approve`, { remarks: `Approved from customer mobile booking ${jobId}` });
+    if (API_CONFIG.IS_MOCK) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
       return;
     }
-
     try {
       // In a real app, this would update the job status and estimate status
       console.log(`Approving estimate ${estimateId} for job ${jobId}`);
@@ -269,14 +192,10 @@ export const BookingService = {
   },
 
   async rescheduleBooking(jobId: string, newSlot: any): Promise<void> {
-    if (!API_CONFIG.IS_MOCK) {
-      await apiClient.post(`/customer-bookings/${jobId}/reschedule`, {
-        slotAvailabilityId: toRequiredNumber(newSlot?.slotAvailabilityId ?? newSlot?.id, 'slotAvailabilityId'),
-        remarks: newSlot?.remarks || 'Rescheduled from customer mobile app',
-      });
+    if (API_CONFIG.IS_MOCK) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
       return;
     }
-
     try {
       await updateDoc(doc(db, 'jobs', jobId), {
         slot: newSlot,
@@ -290,13 +209,11 @@ export const BookingService = {
   },
 
   async getDrafts(userId: string): Promise<any[]> {
-    if (!API_CONFIG.IS_MOCK) {
-      return [];
+    if (API_CONFIG.IS_MOCK) {
+      return [
+        { id: 'draft-1', serviceId: 'ac-service', subServiceId: 'deep-cleaning', createdAt: new Date().toISOString() }
+      ];
     }
-
-    // Mock drafts
-    return [
-      { id: 'draft-1', serviceId: 'ac-service', subServiceId: 'deep-cleaning', createdAt: new Date().toISOString() }
-    ];
+    return apiClient.get<any[]>(`/users/${userId}/bookings/drafts`);
   }
 };

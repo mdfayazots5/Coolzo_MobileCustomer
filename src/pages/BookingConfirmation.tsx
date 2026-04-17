@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { 
   Check, 
@@ -19,10 +19,9 @@ import { toast } from 'sonner';
 
 export default function BookingConfirmation() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { resetBooking, contact } = useBookingStore();
   const { isAuthenticated } = useAuthStore();
-  const bookingRef = String(location.state?.bookingId || "CZ-" + Math.floor(100000 + Math.random() * 900000));
+  const bookingRef = "CZ-" + Math.floor(100000 + Math.random() * 900000);
 
   useEffect(() => {
     // Reset booking state when leaving this screen

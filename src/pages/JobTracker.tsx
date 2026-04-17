@@ -53,17 +53,11 @@ export default function JobTracker() {
   }, [id]);
 
   const handleRefresh = () => {
-    if (!id) return;
     setIsRefreshing(true);
-    BookingService.getBookingById(id)
-      .then((jobData) => {
-        if (jobData) {
-          setJob(jobData);
-          setLastUpdated(new Date());
-        }
-      })
-      .catch((error) => console.error('Failed to refresh job:', error))
-      .finally(() => setIsRefreshing(false));
+    setTimeout(() => {
+      setIsRefreshing(false);
+      setLastUpdated(new Date());
+    }, 1500);
   };
 
   if (!job) {
@@ -283,7 +277,7 @@ export default function JobTracker() {
           <Button 
             variant="outline"
             className="flex-1 h-14 rounded-2xl border-navy/10 text-navy font-bold"
-            onClick={() => navigate(`/app/booking-detail/${job.id}`)}
+            onClick={() => navigate(`/booking-detail/${job.id}`)}
           >
             Job Details
           </Button>

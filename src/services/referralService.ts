@@ -24,24 +24,18 @@ export class ReferralService {
 
   static async getReferralStats(userId: string): Promise<ReferralStats> {
     if (API_CONFIG.IS_MOCK) {
-      try {
-        const docSnap = await getDoc(doc(db, this.COLLECTION, userId));
-        if (docSnap.exists()) {
-          return docSnap.data() as ReferralStats;
-        }
-        // Mock fallback
-        return {
-          referralCode: `COOL${userId.slice(0, 5).toUpperCase()}`,
-          totalReferrals: 0,
-          totalEarnings: 0,
-          pendingReferrals: 0,
-          referrals: []
-        };
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, `${this.COLLECTION}/${userId}`);
-        throw error;
-      }
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return {
+        referralCode: `COOL${userId.slice(0, 5).toUpperCase()}`,
+        totalReferrals: 3,
+        totalEarnings: 1500,
+        pendingReferrals: 1,
+        referrals: [
+          { id: 'ref-1', name: 'John Doe', status: 'Completed', reward: 500, date: '2024-03-10' },
+          { id: 'ref-2', name: 'Jane Smith', status: 'Pending', reward: 500, date: '2024-03-12' }
+        ]
+      };
     }
-    return apiClient.get<ReferralStats>('/referrals/me');
+    return apiClient.get<ReferralStats>(`/users/${userId}/referrals`);
   }
 }

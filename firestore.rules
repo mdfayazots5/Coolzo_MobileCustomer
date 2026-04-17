@@ -46,6 +46,19 @@ service cloud.firestore {
     //   - createdAt: timestamp
     //   - price: number
     //
+    // Collection: invoices
+    // Document ID: {invoiceId}
+    // Fields:
+    //   - userId: string (required)
+    //   - jobId: string (required)
+    //   - invoiceNumber: string (required)
+    //   - amount: number (required)
+    //   - date: string (required, date format)
+    //   - status: string (required, enum: ['Paid', 'Pending', 'Overdue'])
+    //   - items: list (required)
+    //   - tax: number
+    //   - total: number
+    //
     // ===============================================================
 
     // ===============================================================
@@ -62,8 +75,11 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-          (request.auth.token.email == "mdfayazots5@gmail.com" && request.auth.token.email_verified == true));
+        (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+          (request.auth.token.email == "mdfayazots5@gmail.com" && request.auth.token.email_verified == true)
+        );
     }
 
     function isValidEmail(email) {
@@ -96,6 +112,17 @@ service cloud.firestore {
              data.createdAt is timestamp;
     }
 
+    function isValidInvoice(data) {
+      return hasOnlyAllowedFields(['userId', 'jobId', 'invoiceNumber', 'amount', 'date', 'status', 'items', 'tax', 'total']) &&
+             data.userId is string &&
+             data.jobId is string &&
+             data.invoiceNumber is string &&
+             data.amount is number &&
+             data.date is string &&
+             data.status in ['Paid', 'Pending', 'Overdue'] &&
+             data.items is list;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -121,6 +148,40 @@ service cloud.firestore {
         (resource.data.userId == request.auth.uid && isValidJob(request.resource.data) && request.resource.data.status == resource.data.status) ||
         isAdmin()
       );
+    }
+
+    match /invoices/{invoiceId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || 
+        isAdmin()
+      );
+      allow write: if isAdmin();
+    }
+
+    match /support_tickets/{ticketId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    match /offers/{offerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /referrals/{referralId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    match /users/{userId}/equipment/{equipmentId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) || isAdmin();
     }
 
     match /test/connection {

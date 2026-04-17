@@ -19,80 +19,41 @@ export interface Equipment {
 export class EquipmentService {
   private static COLLECTION = 'equipment';
 
-  private static mapEquipment(equipment: any): Equipment {
-    return {
-      id: String(equipment.customerEquipmentId),
-      userId: String(equipment.customerId),
-      name: equipment.name || '',
-      type: equipment.type || '',
-      brand: equipment.brand || '',
-      capacity: equipment.capacity || '',
-      location: equipment.location || '',
-      purchaseDate: equipment.purchaseDate || undefined,
-      lastServiceDate: equipment.lastServiceDate || undefined,
-      serialNumber: equipment.serialNumber || undefined,
-    };
-  }
-
   static async getEquipment(userId: string): Promise<Equipment[]> {
     if (API_CONFIG.IS_MOCK) {
-      try {
-        const q = query(collection(db, this.COLLECTION), where('userId', '==', userId));
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Equipment));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, this.COLLECTION);
-        return [];
-      }
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return [
+        {
+          id: 'eq-1',
+          userId,
+          name: 'Master Bedroom AC',
+          type: 'Split',
+          brand: 'Daikin',
+          capacity: '1.5 Ton',
+          location: 'Master Bedroom',
+          purchaseDate: '2023-05-10',
+          lastServiceDate: '2023-11-15'
+        }
+      ];
     }
-    const equipment = await apiClient.get<any[]>('/customers/me/equipment');
-    return equipment.map(this.mapEquipment);
+    return apiClient.get<Equipment[]>(`/users/${userId}/equipment`);
   }
 
   static async saveEquipment(userId: string, equipment: Partial<Equipment>): Promise<void> {
     if (API_CONFIG.IS_MOCK) {
-      const equipmentId = equipment.id || doc(collection(db, this.COLLECTION)).id;
-      const path = `${this.COLLECTION}/${equipmentId}`;
-      try {
-        await setDoc(doc(db, this.COLLECTION, equipmentId), {
-          ...equipment,
-          userId,
-          id: equipmentId,
-          updatedAt: serverTimestamp(),
-        }, { merge: true });
-      } catch (error) {
-        handleFirestoreError(error, OperationType.WRITE, path);
-      }
+      console.log('Mock: Saving equipment', equipment);
+      await new Promise(resolve => setTimeout(resolve, 800));
       return;
     }
-    const request = {
-      customerEquipmentId: equipment.id ? Number(equipment.id) : 0,
-      name: equipment.name || '',
-      type: equipment.type || '',
-      brand: equipment.brand || '',
-      capacity: equipment.capacity || '',
-      location: equipment.location || '',
-      purchaseDate: equipment.purchaseDate || null,
-      lastServiceDate: equipment.lastServiceDate || null,
-      serialNumber: equipment.serialNumber || '',
-    };
-    if (equipment.id) {
-      await apiClient.put(`/customers/me/equipment/${equipment.id}`, request);
-      return;
-    }
-    await apiClient.post('/customers/me/equipment', request);
+    return apiClient.post(`/users/${userId}/equipment`, equipment);
   }
 
   static async deleteEquipment(userId: string, equipmentId: string): Promise<void> {
     if (API_CONFIG.IS_MOCK) {
-      const path = `${this.COLLECTION}/${equipmentId}`;
-      try {
-        await deleteDoc(doc(db, this.COLLECTION, equipmentId));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.DELETE, path);
-      }
+      console.log('Mock: Deleting equipment', equipmentId);
+      await new Promise(resolve => setTimeout(resolve, 500));
       return;
     }
-    await apiClient.delete(`/customers/me/equipment/${equipmentId}`);
+    return apiClient.delete(`/users/${userId}/equipment/${equipmentId}`);
   }
 }

@@ -9,9 +9,9 @@
     --font-display: "Space Grotesk", sans-serif;
     --font-sans: "Inter", sans-serif;
     
-    --color-navy: #1B2A4A;
-    --color-gold: #C9A84C;
-    --color-warm-white: #FAFAFA;
+    --color-navy: #0B1F3A;
+    --color-gold: #C9A24A;
+    --color-warm-white: #F8F9FA;
     --color-card-white: #FFFFFF;
     --color-text-primary: #1A1A2E;
     --color-text-secondary: #6B7080;
@@ -99,11 +99,21 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
     @apply bg-background text-foreground;
-    }
+  }
   html {
     @apply font-sans;
-    }
+  }
+}
+
+@keyframes loading-bar {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(0); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-loading-bar {
+  animation: loading-bar 2s infinite ease-in-out;
 }

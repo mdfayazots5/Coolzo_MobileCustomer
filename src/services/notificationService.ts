@@ -23,92 +23,53 @@ export interface NotificationPreferences {
   updates: boolean;
 }
 
-interface CommunicationPreferenceResponse {
-  emailAddress: string;
-  mobileNumber: string;
-  emailEnabled: boolean;
-  smsEnabled: boolean;
-  whatsAppEnabled: boolean;
-  pushEnabled: boolean;
-  allowPromotionalContent: boolean;
-}
-
-const mapPreferences = (prefs: CommunicationPreferenceResponse): NotificationPreferences => ({
-  push: prefs.pushEnabled,
-  email: prefs.emailEnabled,
-  sms: prefs.smsEnabled,
-  whatsapp: prefs.whatsAppEnabled,
-  offers: prefs.allowPromotionalContent,
-  updates: true,
-});
-
 export class NotificationService {
   private static COLLECTION = 'notifications';
   private static PREFS_COLLECTION = 'notification_preferences';
 
   static async getNotifications(userId: string): Promise<Notification[]> {
     if (API_CONFIG.IS_MOCK) {
-      try {
-        const q = query(
-          collection(db, this.COLLECTION), 
-          where('userId', '==', userId),
-          orderBy('createdAt', 'desc')
-        );
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, this.COLLECTION);
-        return [];
-      }
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return [
+        {
+          id: '1',
+          userId,
+          title: 'Welcome to Coolzo!',
+          message: 'Thank you for choosing us for your AC services.',
+          type: 'success',
+          isRead: false,
+          createdAt: new Date(),
+        },
+        {
+          id: '2',
+          userId,
+          title: 'Summer Offer',
+          message: 'Get 20% off on your first deep cleaning service.',
+          type: 'info',
+          isRead: true,
+          createdAt: new Date(Date.now() - 86400000),
+        }
+      ];
     }
-    const result = await apiClient.get<any>('/customer-notifications', { pageNumber: 1, pageSize: 50 });
-    const items = Array.isArray(result) ? result : result.items || [];
-    return items.map((notification: any) => ({
-      id: String(notification.customerNotificationId),
-      userId: String(notification.customerId),
-      title: notification.title,
-      message: notification.message,
-      type: notification.type || 'info',
-      isRead: Boolean(notification.isRead),
-      createdAt: notification.createdAt,
-      link: notification.link || undefined,
-    }));
+    return apiClient.get<Notification[]>(`/users/${userId}/notifications`);
   }
 
   static onNotificationsUpdate(userId: string, callback: (notifications: Notification[]) => void): Unsubscribe {
     if (API_CONFIG.IS_MOCK) {
-      const q = query(
-        collection(db, this.COLLECTION), 
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
-      );
-      return onSnapshot(q, (snapshot) => {
-        const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
-        callback(notifications);
-      }, (error) => {
-        handleFirestoreError(error, OperationType.GET, this.COLLECTION);
-      });
+      // Return static data immediately for demo
+      this.getNotifications(userId).then(callback);
+      return () => {};
     }
-    void this.getNotifications(userId)
-      .then(callback)
-      .catch((error) => {
-        console.error('Failed to fetch notifications:', error);
-        callback([]);
-      });
+    // For real API, we might use WebSockets or polling, but for now we'll just return a dummy unsubscribe
     return () => {};
   }
 
   static async markAsRead(notificationId: string): Promise<void> {
     if (API_CONFIG.IS_MOCK) {
-      const path = `${this.COLLECTION}/${notificationId}`;
-      try {
-        await updateDoc(doc(db, this.COLLECTION, notificationId), { isRead: true });
-      } catch (error) {
-        handleFirestoreError(error, OperationType.UPDATE, path);
-      }
+      console.log('Mock: Marking notification as read', notificationId);
       return;
     }
-    await apiClient.post(`/customer-notifications/${notificationId}/mark-read`, {});
+    return apiClient.put(`/notifications/${notificationId}/read`, {});
   }
 
   static async getPreferences(userId: string): Promise<NotificationPreferences> {
@@ -124,8 +85,7 @@ export class NotificationService {
         throw error;
       }
     }
-    const prefs = await apiClient.get<CommunicationPreferenceResponse>('/communication-preferences/me');
-    return mapPreferences(prefs);
+    return apiClient.get<NotificationPreferences>(`/users/${userId}/notifications/preferences`);
   }
 
   static async updatePreferences(userId: string, prefs: NotificationPreferences): Promise<void> {
@@ -137,12 +97,6 @@ export class NotificationService {
       }
       return;
     }
-    await apiClient.put<CommunicationPreferenceResponse>('/communication-preferences/me', {
-      emailEnabled: prefs.email,
-      smsEnabled: prefs.sms,
-      whatsAppEnabled: prefs.whatsapp,
-      pushEnabled: prefs.push,
-      allowPromotionalContent: prefs.offers,
-    });
+    return apiClient.put(`/users/${userId}/notifications/preferences`, prefs);
   }
 }

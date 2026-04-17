@@ -18,47 +18,41 @@ export interface Offer {
 export class OfferService {
   private static COLLECTION = 'offers';
 
-  private static mapOffer(offer: any): Offer {
-    return {
-      id: String(offer.promotionalOfferId),
-      code: offer.code,
-      title: offer.title,
-      description: offer.description,
-      discountType: offer.discountType,
-      discountValue: Number(offer.discountValue ?? 0),
-      minOrderValue: Number(offer.minOrderValue ?? 0),
-      expiryDate: offer.expiryDate || '',
-      category: offer.category || undefined,
-    };
-  }
-
   static async getOffers(): Promise<Offer[]> {
     if (API_CONFIG.IS_MOCK) {
-      try {
-        const querySnapshot = await getDocs(collection(db, this.COLLECTION));
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Offer));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, this.COLLECTION);
-        return [];
-      }
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return [
+        {
+          id: 'offer-1',
+          code: 'WELCOME20',
+          title: 'Welcome Offer',
+          description: 'Get 20% off on your first service.',
+          discountType: 'percentage',
+          discountValue: 20,
+          minOrderValue: 500,
+          expiryDate: '2024-12-31'
+        }
+      ];
     }
-    const offers = await apiClient.get<any[]>('/offers');
-    return offers.map(this.mapOffer);
+    return apiClient.get<Offer[]>('/offers');
   }
 
   static async validateCoupon(code: string, userId: string): Promise<Offer | null> {
     if (API_CONFIG.IS_MOCK) {
-      try {
-        const q = query(collection(db, this.COLLECTION), where('code', '==', code));
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) return null;
-        return { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as Offer;
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, this.COLLECTION);
-        return null;
+      if (code === 'WELCOME20') {
+        return {
+          id: 'offer-1',
+          code: 'WELCOME20',
+          title: 'Welcome Offer',
+          description: 'Get 20% off on your first service.',
+          discountType: 'percentage',
+          discountValue: 20,
+          minOrderValue: 500,
+          expiryDate: '2024-12-31'
+        };
       }
+      return null;
     }
-    const offer = await apiClient.post<any | null>('/offers/validate-coupon', { code });
-    return offer ? this.mapOffer(offer) : null;
+    return apiClient.post<Offer | null>('/offers/validate', { code, userId });
   }
 }

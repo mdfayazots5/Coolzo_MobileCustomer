@@ -25,7 +25,6 @@ const TicketDetail = () => {
   const { user } = useAuthStore();
   const [ticket, setTicket] = useState<SupportTicket | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSending, setIsSending] = useState(false);
   
   const [newMessage, setNewMessage] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -66,20 +65,12 @@ const TicketDetail = () => {
     e.preventDefault();
     if (!newMessage.trim() || !user || !id) return;
     
-    setIsSending(true);
     try {
-      const message = await SupportService.addMessage(id, newMessage.trim());
-      setTicket((current) => current ? {
-        ...current,
-        messages: [...current.messages, message],
-        updatedAt: message.timestamp,
-      } : current);
+      await SupportService.addMessage(id, 'User', newMessage);
       toast.success('Message sent');
       setNewMessage('');
     } catch (error) {
       toast.error('Failed to send message');
-    } finally {
-      setIsSending(false);
     }
   };
 
@@ -187,10 +178,10 @@ const TicketDetail = () => {
               />
               <button 
                 type="submit"
-                disabled={!newMessage.trim() || isSending}
+                disabled={!newMessage.trim()}
                 className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl bg-gold text-navy flex items-center justify-center disabled:opacity-30 active:scale-90 transition-transform"
               >
-                {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                <Send className="w-4 h-4" />
               </button>
             </div>
           </form>

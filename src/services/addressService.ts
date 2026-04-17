@@ -20,84 +20,43 @@ export interface Address {
 export class AddressService {
   private static COLLECTION = 'addresses';
 
-  private static mapAddress(address: any): Address {
-    return {
-      id: String(address.customerAddressId),
-      userId: String(address.customerId),
-      label: address.addressLabel || address.addressType || 'Saved Address',
-      addressLine1: address.addressLine1 || '',
-      addressLine2: address.addressLine2 || undefined,
-      landmark: address.landmark || undefined,
-      city: address.cityName || '',
-      state: address.stateName || '',
-      pinCode: address.pincode || '',
-      isDefault: Boolean(address.isDefault),
-      type: (address.addressType || address.addressLabel || 'Other') as Address['type'],
-    };
-  }
-
   static async getAddresses(userId: string): Promise<Address[]> {
     if (API_CONFIG.IS_MOCK) {
-      try {
-        const q = query(collection(db, this.COLLECTION), where('userId', '==', userId));
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Address));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, this.COLLECTION);
-        return [];
-      }
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return [
+        {
+          id: 'addr-1',
+          userId,
+          label: 'Home',
+          addressLine1: 'Apartment 402, Block B',
+          addressLine2: 'Green Valley Apartments',
+          landmark: 'Near Central Park',
+          city: 'Mumbai',
+          state: 'Maharashtra',
+          pinCode: '400001',
+          isDefault: true,
+          type: 'Home'
+        }
+      ];
     }
-    const addresses = await apiClient.get<any[]>('/customers/me/addresses');
-    return addresses.map(this.mapAddress);
+    return apiClient.get<Address[]>(`/users/${userId}/addresses`);
   }
 
   static async saveAddress(userId: string, address: Partial<Address>): Promise<void> {
     if (API_CONFIG.IS_MOCK) {
-      const addressId = address.id || doc(collection(db, this.COLLECTION)).id;
-      const path = `${this.COLLECTION}/${addressId}`;
-      try {
-        await setDoc(doc(db, this.COLLECTION, addressId), {
-          ...address,
-          userId,
-          id: addressId,
-          updatedAt: serverTimestamp(),
-        }, { merge: true });
-      } catch (error) {
-        handleFirestoreError(error, OperationType.WRITE, path);
-      }
+      console.log('Mock: Saving address', address);
+      await new Promise(resolve => setTimeout(resolve, 800));
       return;
     }
-    const request = {
-      addressLabel: address.label || address.type || 'Saved Address',
-      addressLine1: address.addressLine1 || '',
-      addressLine2: address.addressLine2 || '',
-      landmark: address.landmark || '',
-      cityName: address.city || '',
-      stateName: address.state || '',
-      pincode: address.pinCode || '',
-      zoneId: null,
-      latitude: null,
-      longitude: null,
-      isDefault: Boolean(address.isDefault),
-      addressType: address.type || address.label || 'Other',
-    };
-    if (address.id) {
-      await apiClient.put(`/customers/me/addresses/${address.id}`, { customerAddressId: Number(address.id), ...request });
-      return;
-    }
-    await apiClient.post('/customers/me/addresses', request);
+    return apiClient.post(`/users/${userId}/addresses`, address);
   }
 
   static async deleteAddress(userId: string, addressId: string): Promise<void> {
     if (API_CONFIG.IS_MOCK) {
-      const path = `${this.COLLECTION}/${addressId}`;
-      try {
-        await deleteDoc(doc(db, this.COLLECTION, addressId));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.DELETE, path);
-      }
+      console.log('Mock: Deleting address', addressId);
+      await new Promise(resolve => setTimeout(resolve, 500));
       return;
     }
-    await apiClient.delete(`/customers/me/addresses/${addressId}`);
+    return apiClient.delete(`/users/${userId}/addresses/${addressId}`);
   }
 }

@@ -83,7 +83,6 @@ export default function Onboarding() {
           className="w-full max-w-xs h-14 rounded-2xl bg-gold text-navy hover:bg-gold/90 font-bold text-lg group"
         >
           {currentStep === ONBOARDING_STEPS.length - 1 ? 'Get Started' : 'Next'}
-          <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
         </Button>
       </div>
     </div>

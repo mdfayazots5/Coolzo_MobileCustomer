@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, Timer, RefreshCw } from 'lucide-react';
+import { ChevronLeft, Timer, RefreshCw, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { AuthService } from '@/services/authService';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const OTPScreen = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { setUser } = useAuthStore();
   const [otp, setOtp] = useState(['', '', '', '']);
   const [timeLeft, setTimeLeft] = useState(30);
   const [isResending, setIsResending] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const phone = location.state?.phone || '+91 98765 43210';
 
@@ -48,16 +52,30 @@ const OTPScreen = () => {
       return;
     }
     
-    toast.success('OTP Verified Successfully');
-    navigate('/app');
+    setIsVerifying(true);
+    try {
+      const user = await AuthService.verifyOTP(phone, otp.join(''));
+      setUser(user);
+      toast.success('OTP Verified Successfully');
+      navigate('/app');
+    } catch (error) {
+      toast.error('Invalid OTP. Please try again.');
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   const handleResend = async () => {
     setIsResending(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setTimeLeft(30);
-    setIsResending(false);
-    toast.success('New code sent to your phone');
+    try {
+      await AuthService.loginWithPhone(phone);
+      setTimeLeft(30);
+      toast.success('New code sent to your phone');
+    } catch (error) {
+      toast.error('Failed to resend OTP');
+    } finally {
+      setIsResending(false);
+    }
   };
 
   return (
@@ -85,6 +103,7 @@ const OTPScreen = () => {
             value={digit}
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
+            disabled={isVerifying}
             className="w-16 h-20 text-center text-2xl font-display font-bold rounded-2xl border-border bg-white focus:ring-gold"
           />
         ))}
@@ -98,7 +117,7 @@ const OTPScreen = () => {
           ) : (
             <button 
               onClick={handleResend}
-              disabled={isResending}
+              disabled={isResending || isVerifying}
               className="text-gold font-bold flex items-center gap-2"
             >
               {isResending ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Resend Code'}
@@ -108,9 +127,11 @@ const OTPScreen = () => {
 
         <Button 
           onClick={handleVerify}
+          disabled={isVerifying}
           className="w-full h-16 rounded-[24px] bg-navy text-gold font-bold text-lg shadow-card"
         >
-          Verify & Continue
+          {isVerifying ? <Loader2 className="w-6 h-6 animate-spin mr-2" /> : null}
+          {isVerifying ? 'Verifying...' : 'Verify & Continue'}
         </Button>
       </div>
     </div>

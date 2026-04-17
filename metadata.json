@@ -1,5 +1,5 @@
 {
   "name": "Coolzo",
   "description": "Premium AC service app with certified technicians and real-time tracking.",
-  "requestFramePermissions": ["geolocation", "camera"]
+  "requestFramePermissions": ["geolocation"]
 }

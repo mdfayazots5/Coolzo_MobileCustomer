@@ -18,76 +18,48 @@ export interface Review {
 export class ReviewService {
   private static COLLECTION = 'reviews';
 
-  private static mapReview(review: any): Review {
-    return {
-      id: String(review.customerReviewId),
-      userId: String(review.customerId),
-      userName: review.userName || '',
-      userPhoto: review.userPhoto || undefined,
-      rating: Number(review.rating ?? 0),
-      comment: review.comment || '',
-      jobId: review.bookingId ? String(review.bookingId) : undefined,
-      serviceId: review.serviceId ? String(review.serviceId) : undefined,
-      createdAt: review.createdAt,
-    };
-  }
-
   static async getReviewsByService(serviceId: string): Promise<Review[]> {
     if (API_CONFIG.IS_MOCK) {
-      try {
-        const q = query(
-          collection(db, this.COLLECTION),
-          where('serviceId', '==', serviceId),
-          orderBy('createdAt', 'desc')
-        );
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, this.COLLECTION);
-        return [];
-      }
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return [
+        {
+          id: 'rev-1',
+          userId: 'u1',
+          userName: 'Amit Kumar',
+          rating: 5,
+          comment: 'Excellent service, very professional.',
+          serviceId,
+          createdAt: new Date()
+        }
+      ];
     }
-    const reviews = await apiClient.get<any[]>('/customer-reviews', { serviceId });
-    return reviews.map(this.mapReview);
+    return apiClient.get<Review[]>(`/services/${serviceId}/reviews`);
   }
 
   static async getReviews(serviceType?: string): Promise<Review[]> {
     if (API_CONFIG.IS_MOCK) {
-      try {
-        let q = query(collection(db, this.COLLECTION), orderBy('createdAt', 'desc'));
-        if (serviceType && serviceType !== 'All') {
-          q = query(collection(db, this.COLLECTION), where('serviceType', '==', serviceType), orderBy('createdAt', 'desc'));
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return [
+        {
+          id: 'rev-1',
+          userId: 'u1',
+          userName: 'Amit Kumar',
+          rating: 5,
+          comment: 'Excellent service, very professional.',
+          createdAt: new Date()
         }
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, this.COLLECTION);
-        return [];
-      }
+      ];
     }
-    const reviews = await apiClient.get<any[]>('/customer-reviews');
-    return reviews.map(this.mapReview);
+    const url = serviceType && serviceType !== 'All' ? `/reviews?serviceType=${serviceType}` : '/reviews';
+    return apiClient.get<Review[]>(url);
   }
 
   static async submitReview(userId: string, review: Partial<Review>): Promise<void> {
     if (API_CONFIG.IS_MOCK) {
-      try {
-        await addDoc(collection(db, this.COLLECTION), {
-          ...review,
-          userId,
-          createdAt: serverTimestamp(),
-        });
-      } catch (error) {
-        handleFirestoreError(error, OperationType.CREATE, this.COLLECTION);
-      }
+      console.log('Mock: Submitting review', review);
+      await new Promise(resolve => setTimeout(resolve, 1000));
       return;
     }
-    await apiClient.post('/customer-reviews', {
-      rating: review.rating || 0,
-      comment: review.comment || '',
-      bookingId: review.jobId ? Number(review.jobId) : null,
-      serviceId: review.serviceId ? Number(review.serviceId) : null,
-      customerPhotoUrl: review.userPhoto || null,
-    });
+    return apiClient.post('/reviews', { ...review, userId });
   }
 }

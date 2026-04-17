@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { Logo } from '@/components/Logo';
 import { useAuthStore } from '@/store/useAuthStore';
 
 export default function Splash() {
@@ -29,16 +30,13 @@ export default function Splash() {
         transition={{ duration: 1, ease: "easeOut" }}
         className="relative"
       >
-        <h1 className="text-6xl font-display font-bold tracking-tighter text-gold">
-          COOLZO
-        </h1>
+        <Logo variant="white" className="scale-150" />
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: '100%' }}
           transition={{ delay: 1, duration: 1 }}
-          className="h-1 bg-gold mt-2 rounded-full"
+          className="h-1 bg-gold mt-6 rounded-full"
         />
-        <div className="absolute inset-0 animate-shimmer pointer-events-none opacity-30" />
       </motion.div>
       
       <motion.p

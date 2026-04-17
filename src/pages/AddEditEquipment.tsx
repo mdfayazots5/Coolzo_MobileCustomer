@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Camera, Wind, Info, Loader2 } from 'lucide-react';
+import { ChevronLeft, Image as ImageIcon, Wind, Info, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -85,7 +85,7 @@ const AddEditEquipment = () => {
         {/* Photo Upload */}
         <div className="flex flex-col items-center justify-center py-10 bg-white rounded-[40px] border border-dashed border-navy/10">
           <div className="w-20 h-20 rounded-[32px] bg-navy/5 flex items-center justify-center text-navy/20 mb-4">
-            <Camera className="w-8 h-8" />
+            <ImageIcon className="w-8 h-8" />
           </div>
           <p className="text-xs font-bold text-navy/40 uppercase tracking-widest">Upload AC Photo</p>
           <p className="text-[10px] text-navy/20 mt-1">Help technicians identify the unit</p>

@@ -1,23 +1,18 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type ACBrand = string;
-export type ACType = string;
-export type ACCapacity = string;
+export type ACBrand = 'Samsung' | 'LG' | 'Daikin' | 'Voltas' | 'Blue Star' | 'Mitsubishi' | 'Lloyd' | 'Other';
+export type ACType = 'Split' | 'Window' | 'Cassette' | 'Centralized';
+export type ACCapacity = '1T' | '1.5T' | '2T' | '3T+';
 
 export interface BookingState {
   step: number;
   serviceId: string | null;
-  serviceName: string;
-  servicePrice: number;
   subServiceId: string | null;
   equipment: {
     brand: ACBrand | '';
-    brandId: string | number | null;
     type: ACType | '';
-    acTypeId: string | number | null;
     capacity: ACCapacity | '';
-    tonnageId: string | number | null;
     units: number;
   };
   location: {
@@ -27,13 +22,10 @@ export interface BookingState {
     pinCode: string;
     label: 'Home' | 'Office' | 'Other';
     saveToAccount: boolean;
-    zoneId: string | number | null;
   };
   slot: {
     date: string | null; // ISO date string
-    timeWindow: string | null;
-    slotAvailabilityId: string | number | null;
-    slotLabel: string;
+    timeWindow: 'Morning' | 'Afternoon' | 'Evening' | null;
     isEmergency: boolean;
   };
   contact: {
@@ -65,16 +57,11 @@ interface BookingStore extends BookingState {
 const initialState: BookingState = {
   step: 1,
   serviceId: null,
-  serviceName: '',
-  servicePrice: 0,
   subServiceId: null,
   equipment: {
     brand: '',
-    brandId: null,
     type: '',
-    acTypeId: null,
     capacity: '',
-    tonnageId: null,
     units: 1,
   },
   location: {
@@ -84,13 +71,10 @@ const initialState: BookingState = {
     pinCode: '',
     label: 'Home',
     saveToAccount: false,
-    zoneId: null,
   },
   slot: {
     date: null,
     timeWindow: null,
-    slotAvailabilityId: null,
-    slotLabel: '',
     isEmergency: false,
   },
   contact: {

@@ -6,6 +6,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
+import { Logo } from '@/components/Logo';
 import { useAuthStore } from '@/store/useAuthStore';
 import BookingDraftResume from '@/pages/BookingDraftResume';
 import AMCEnrollmentVariant from '@/pages/AMCEnrollmentVariant';
@@ -31,6 +32,7 @@ import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
+import BrandShowcase from '@/pages/BrandShowcase';
 import HomeShell from '@/pages/HomeShell';
 import ServiceCatalog from '@/pages/ServiceCatalog';
 import ServiceDetail from '@/pages/ServiceDetail';
@@ -73,7 +75,7 @@ import Changelog from '@/pages/Changelog';
 import ErrorScreen from '@/pages/ErrorScreen';
 import NetworkStatusBanner from '@/components/NetworkStatusBanner';
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuthStore();
   if (!isAuthenticated) return <Navigate to="/auth-gate" replace />;
   return <>{children}</>;
@@ -90,9 +92,11 @@ export default function App() {
   if (!isAuthReady) {
     return (
       <div className="min-h-screen bg-navy flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin" />
-          <p className="text-gold font-display font-bold tracking-widest text-sm uppercase">Coolzo</p>
+        <div className="flex flex-col items-center gap-6">
+          <Logo variant="white" iconOnly className="animate-pulse scale-150" />
+          <div className="w-12 h-1 border-2 border-gold/20 rounded-full overflow-hidden">
+            <div className="h-full bg-gold animate-loading-bar" />
+          </div>
         </div>
       </div>
     );
@@ -111,6 +115,7 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/brand" element={<BrandShowcase />} />
           <Route path="/otp" element={<OTPScreen />} />
           <Route path="/emergency" element={<EmergencyBooking />} />
           <Route path="/slot-unavailable" element={<SlotUnavailable />} />
@@ -133,12 +138,10 @@ export default function App() {
           <Route path="/booking-confirmation" element={<BookingConfirmation />} />
           <Route path="/job-tracker/:id" element={<ProtectedRoute><JobTracker /></ProtectedRoute>} />
           <Route path="/estimate-approval/:id" element={<ProtectedRoute><EstimateApproval /></ProtectedRoute>} />
-          <Route path="/app/jobs" element={<ProtectedRoute><MyJobs /></ProtectedRoute>} />
-          <Route path="/app/equipment" element={<ProtectedRoute><EquipmentList /></ProtectedRoute>} />
+          
           <Route path="/app/equipment/:id" element={<ProtectedRoute><EquipmentDetail /></ProtectedRoute>} />
           <Route path="/app/equipment/new" element={<ProtectedRoute><AddEditEquipment /></ProtectedRoute>} />
           <Route path="/app/equipment/edit/:id" element={<ProtectedRoute><AddEditEquipment /></ProtectedRoute>} />
-          <Route path="/app/amc" element={<ProtectedRoute><AMCDashboard /></ProtectedRoute>} />
           <Route path="/app/amc/visit/:id" element={<ProtectedRoute><AMCVisitDetail /></ProtectedRoute>} />
           <Route path="/app/amc/upsell" element={<ProtectedRoute><AMCEnrollmentUpsell /></ProtectedRoute>} />
           <Route path="/app/booking-detail/:id" element={<ProtectedRoute><BookingDetail /></ProtectedRoute>} />
@@ -150,39 +153,28 @@ export default function App() {
           <Route path="/guest-prompt" element={<GuestRegistrationPrompt />} />
           <Route path="/booking-resume" element={<BookingDraftResume />} />
           <Route path="/amc-enrollment" element={<AMCEnrollmentVariant />} />
-        <Route path="/app/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
-        <Route path="/app/invoice/:id" element={<ProtectedRoute><InvoiceDetail /></ProtectedRoute>} />
-        <Route path="/app/support" element={<ProtectedRoute><SupportTickets /></ProtectedRoute>} />
-        <Route path="/app/support/new" element={<ProtectedRoute><RaiseTicket /></ProtectedRoute>} />
-        <Route path="/app/support/:id" element={<ProtectedRoute><TicketDetail /></ProtectedRoute>} />
-        <Route path="/app/profile-settings" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-        <Route path="/app/addresses" element={<ProtectedRoute><Addresses /></ProtectedRoute>} />
-        <Route path="/app/notification-preferences" element={<ProtectedRoute><NotificationPreferences /></ProtectedRoute>} />
-        <Route path="/app/privacy" element={<LegalContent />} />
-        <Route path="/app/terms" element={<LegalContent />} />
-        <Route path="/app/payment/:id" element={<ProtectedRoute><PaymentGateway /></ProtectedRoute>} />
-        <Route path="/app/payment-status/:status/:id" element={<ProtectedRoute><PaymentStatus /></ProtectedRoute>} />
-        <Route path="/app/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
-        <Route path="/app/delete-account" element={<ProtectedRoute><DeleteAccount /></ProtectedRoute>} />
-        <Route path="/app/review/:id" element={<ProtectedRoute><ReviewSubmission /></ProtectedRoute>} />
-        <Route path="/app/refer" element={<ProtectedRoute><ReferFriend /></ProtectedRoute>} />
-        <Route path="/app/rewards" element={<ProtectedRoute><LoyaltyRewards /></ProtectedRoute>} />
-        <Route path="/app/offers" element={<ProtectedRoute><PromotionalOffers /></ProtectedRoute>} />
-        <Route path="/app/notifications" element={<ProtectedRoute><NotificationCentre /></ProtectedRoute>} />
-        <Route path="/app/permissions" element={<ProtectedRoute><PermissionsManagement /></ProtectedRoute>} />
-        <Route path="/app/changelog" element={<Changelog />} />
-        <Route path="/app/error" element={<ErrorScreen />} />
-        <Route path="/app/maintenance" element={<ErrorScreen type="maintenance" />} />
-        <Route path="*" element={<ErrorScreen type="404" />} />
-
-          {/* Protected Routes */}
+          <Route path="/app/invoice/:id" element={<ProtectedRoute><InvoiceDetail /></ProtectedRoute>} />
+          <Route path="/app/support/new" element={<ProtectedRoute><RaiseTicket /></ProtectedRoute>} />
+          <Route path="/app/support/:id" element={<ProtectedRoute><TicketDetail /></ProtectedRoute>} />
+          <Route path="/app/privacy" element={<LegalContent />} />
+          <Route path="/app/terms" element={<LegalContent />} />
+          <Route path="/app/payment/:id" element={<ProtectedRoute><PaymentGateway /></ProtectedRoute>} />
+          <Route path="/app/payment-status/:status/:id" element={<ProtectedRoute><PaymentStatus /></ProtectedRoute>} />
+          <Route path="/app/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
+          <Route path="/app/delete-account" element={<ProtectedRoute><DeleteAccount /></ProtectedRoute>} />
+          <Route path="/app/review/:id" element={<ProtectedRoute><ReviewSubmission /></ProtectedRoute>} />
+          <Route path="/app/refer" element={<ProtectedRoute><ReferFriend /></ProtectedRoute>} />
+          <Route path="/app/rewards" element={<ProtectedRoute><LoyaltyRewards /></ProtectedRoute>} />
+          <Route path="/app/offers" element={<ProtectedRoute><PromotionalOffers /></ProtectedRoute>} />
+          <Route path="/app/notifications" element={<ProtectedRoute><NotificationCentre /></ProtectedRoute>} />
+          <Route path="/app/permissions" element={<ProtectedRoute><PermissionsManagement /></ProtectedRoute>} />
+          <Route path="/app/changelog" element={<Changelog />} />
+          <Route path="/app/error" element={<ErrorScreen />} />
+          <Route path="/app/maintenance" element={<ErrorScreen type="maintenance" />} />
+          {/* Home Shell (Layout with Footer) */}
           <Route
             path="/app/*"
-            element={
-              <ProtectedRoute>
-                <HomeShell />
-              </ProtectedRoute>
-            }
+            element={<HomeShell />}
           />
 
           {/* Fallback */}

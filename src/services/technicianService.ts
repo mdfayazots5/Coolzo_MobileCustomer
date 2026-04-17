@@ -20,28 +20,19 @@ export class TechnicianService {
 
   static async getTechnicianById(id: string): Promise<Technician | null> {
     if (API_CONFIG.IS_MOCK) {
-      try {
-        const docSnap = await getDoc(doc(db, this.COLLECTION, id));
-        if (docSnap.exists()) {
-          return { id: docSnap.id, ...docSnap.data() } as Technician;
-        }
-        return null;
-      } catch (error) {
-        handleFirestoreError(error, OperationType.GET, `${this.COLLECTION}/${id}`);
-        return null;
-      }
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return {
+        id,
+        name: 'Rahul Sharma',
+        photoUrl: 'https://picsum.photos/seed/tech1/200/200',
+        rating: 4.8,
+        totalJobs: 156,
+        experience: '5 Years',
+        specialization: ['Split AC', 'Window AC', 'Inverter AC'],
+        languages: ['English', 'Hindi', 'Marathi'],
+        verified: true
+      };
     }
-    const technician = await apiClient.get<any>(`/customer-technicians/${id}`);
-    return {
-      id: String(technician.technicianId),
-      name: technician.name,
-      photoUrl: technician.photoUrl || '',
-      rating: Number(technician.rating ?? 0),
-      totalJobs: Number(technician.totalJobs ?? 0),
-      experience: technician.experience || '',
-      specialization: technician.specialization || [],
-      languages: technician.languages || [],
-      verified: Boolean(technician.verified),
-    };
+    return apiClient.get<Technician>(`/technicians/${id}`);
   }
 }

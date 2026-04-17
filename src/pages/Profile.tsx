@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, 
-  Camera, 
+  Image as ImageIcon, 
   User, 
   Mail, 
   Phone, 
@@ -72,7 +72,7 @@ const Profile = () => {
               <img src={`https://i.pravatar.cc/300?u=${user?.email}`} alt="Avatar" className="w-full h-full object-cover" />
             </div>
             <button className="absolute -bottom-2 -right-2 w-10 h-10 rounded-2xl bg-navy text-gold flex items-center justify-center shadow-lg border-2 border-white">
-              <Camera className="w-5 h-5" />
+              <ImageIcon className="w-5 h-5" />
             </button>
           </div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mt-6">Member ID: CZ-88291</p>

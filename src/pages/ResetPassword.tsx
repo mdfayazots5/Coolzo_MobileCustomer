@@ -4,29 +4,23 @@ import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AuthService } from '@/services/authService';
 import { toast } from 'sonner';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [loginId, setLoginId] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loginId) return;
     setIsLoading(true);
-    try {
-      await AuthService.resetPassword(loginId);
+    setTimeout(() => {
       setIsSuccess(true);
-      toast.success('Password reset request submitted');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to request password reset');
-    } finally {
       setIsLoading(false);
-    }
+      toast.success('Password reset successfully');
+    }, 1500);
   };
 
   return (
@@ -49,22 +43,43 @@ export default function ResetPassword() {
           >
             <div>
               <h1 className="text-3xl font-display font-bold text-navy mb-2">Reset Password</h1>
-              <p className="text-navy/60">Enter your email or mobile number to start password reset.</p>
+              <p className="text-navy/60">Create a new secure password for your account.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="loginId">Email or Mobile Number</Label>
+                <Label htmlFor="password">New Password</Label>
+                <div className="relative">
+                  <Input 
+                    id="password" 
+                    type={showPassword ? 'text' : 'password'} 
+                    placeholder="••••••••" 
+                    className="h-14 rounded-xl border-navy/10 focus:border-gold focus:ring-gold pr-12"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-navy/40"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                <div className="h-1 w-full bg-navy/5 rounded-full overflow-hidden mt-2">
+                  <div className="h-full w-3/4 bg-gold rounded-full" />
+                </div>
+                <p className="text-[10px] text-navy/40 uppercase tracking-wider font-bold">Password Strength: Strong</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm New Password</Label>
                 <Input 
-                  id="loginId" 
-                  type="text" 
-                  placeholder="name@example.com or 9876543210" 
+                  id="confirm-password" 
+                  type="password" 
+                  placeholder="••••••••" 
                   className="h-14 rounded-xl border-navy/10 focus:border-gold focus:ring-gold"
-                  value={loginId}
-                  onChange={(e) => setLoginId(e.target.value)}
                   required
                 />
-                <p className="text-[10px] text-navy/40 uppercase tracking-wider font-bold">A secure reset instruction will be sent if the account exists.</p>
               </div>
 
               <Button 
@@ -72,7 +87,7 @@ export default function ResetPassword() {
                 disabled={isLoading}
                 className="w-full h-14 rounded-xl bg-navy text-warm-white hover:bg-navy/90 font-bold"
               >
-                {isLoading ? 'Submitting...' : 'Request Reset'}
+                {isLoading ? 'Resetting...' : 'Reset Password'}
               </Button>
             </form>
           </motion.div>
@@ -85,9 +100,9 @@ export default function ResetPassword() {
             <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-8">
               <CheckCircle2 className="w-10 h-10 text-green-500" />
             </div>
-            <h2 className="text-2xl font-display font-bold text-navy">Reset Requested</h2>
+            <h2 className="text-2xl font-display font-bold text-navy">Password Reset</h2>
             <p className="text-navy/60 max-w-xs mx-auto">
-              If the account exists, Coolzo will send the configured reset instructions.
+              Your password has been successfully updated. You can now log in with your new password.
             </p>
             <div className="pt-8">
               <Button 

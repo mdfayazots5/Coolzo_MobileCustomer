@@ -1,6 +1,6 @@
 import { BookingService } from '@/services/bookingService';
-import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Home as HomeIcon, 
@@ -20,14 +20,34 @@ import {
   Award,
   ArrowRight,
   MapPin,
-  CheckCircle2
+  CheckCircle2,
+  Wrench,
+  Droplets,
+  PlusCircle,
+  Gauge,
+  Wind
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Logo } from '@/components/Logo';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBookingStore } from '@/store/useBookingStore';
-import NotificationPrompt from '@/components/auth/NotificationPrompt';
+import AccessRequestPrompt from '@/components/auth/AccessRequestPrompt';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ProtectedRoute } from '@/App';
+import MyJobs from '@/pages/MyJobs';
+import EquipmentList from '@/pages/EquipmentList';
+import AMCDashboard from '@/pages/AMCDashboard';
+import Invoices from '@/pages/Invoices';
+import SupportTickets from '@/pages/SupportTickets';
+import Profile from '@/pages/Profile';
+import Addresses from '@/pages/Addresses';
+import NotificationPreferences from '@/pages/NotificationPreferences';
+import LoyaltyRewards from '@/pages/LoyaltyRewards';
+import PromotionalOffers from '@/pages/PromotionalOffers';
+import NotificationCentre from '@/pages/NotificationCentre';
+import PermissionsManagement from '@/pages/PermissionsManagement';
+import Changelog from '@/pages/Changelog';
 import { 
   SERVICES, 
   AMC_PLANS, 
@@ -39,6 +59,7 @@ import {
   INVOICES,
   SUPPORT_TICKETS
 } from '@/lib/mockData';
+import { FEATURE_FLAGS } from '@/config/apiConfig';
 import { 
   MessageSquare, 
   Crown, 
@@ -61,11 +82,26 @@ const SectionHeader = ({ title, actionLabel, onAction }: { title: string, action
     {actionLabel && (
       <button onClick={onAction} className="text-gold text-xs font-bold uppercase tracking-widest flex items-center gap-1">
         {actionLabel}
-        <ChevronRight className="w-3 h-3" />
       </button>
     )}
   </div>
 );
+
+const getServiceIcon = (category: string) => {
+  switch (category) {
+    case 'Repair': return Wrench;
+    case 'Cleaning': return Droplets;
+    case 'Installation': return PlusCircle;
+    case 'Gas Refill': return Gauge;
+    case 'AMC': return ShieldCheck;
+    default: return Zap;
+  }
+};
+
+const getIconByServiceName = (serviceName: string) => {
+  const service = SERVICES.find(s => s.name === serviceName);
+  return getServiceIcon(service?.category || '');
+};
 
 const HomeTab = () => {
   const navigate = useNavigate();
@@ -89,103 +125,87 @@ const HomeTab = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="pb-24">
-        {/* App Bar */}
-        <div className="sticky top-0 z-30 bg-warm-white/80 backdrop-blur-md px-6 py-4 flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-2xl font-display font-bold text-navy tracking-tight">COOLZO</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => navigate('/app/notifications')}
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm border border-navy/5 text-navy relative"
+      <div className="px-6 pt-2 pb-20 space-y-8">
+        {/* Hero Section for Guests */}
+        <section className="relative overflow-hidden rounded-[32px] bg-navy p-8 text-warm-white">
+          <div className="relative z-10">
+            <Badge className="bg-gold text-navy border-none mb-4 font-bold uppercase tracking-widest text-[10px]">Premium Care</Badge>
+            <h1 className="text-3xl font-display font-bold text-gold mb-4 leading-tight">Expert AC Solutions for Your Home</h1>
+            <p className="text-warm-white/60 text-sm mb-8 leading-relaxed max-w-[240px]">
+              Certified technicians, transparent pricing, and 90-minute response time.
+            </p>
+            <Button 
+              className="h-14 rounded-2xl bg-gold text-navy hover:bg-gold/90 font-bold px-8"
+              onClick={() => navigate('/app/book')}
             >
-              <Bell className="w-5 h-5" />
-              <div className="absolute top-2.5 right-2.5 w-2 h-2 bg-gold rounded-full border-2 border-white" />
-            </button>
-            <button 
-              onClick={() => navigate('/search')}
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm border border-navy/5 text-navy"
-            >
-              <Search className="w-5 h-5" />
-            </button>
+              Book Now
+            </Button>
           </div>
-        </div>
+          <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-gold/10 rounded-full blur-3xl" />
+          <Wind className="absolute top-10 right-10 w-24 h-24 text-gold/5" />
+        </section>
 
-        <div className="px-6 py-8 space-y-10">
-          <section>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-display font-bold text-navy">Expert AC Services</h2>
-              <Button variant="ghost" className="text-gold font-bold text-xs uppercase tracking-widest" onClick={() => navigate('/services')}>View All</Button>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {SERVICES.slice(0, 4).map((service) => (
+        <section>
+          <div className="flex items-center justify-between mb-8 px-2">
+            <h2 className="text-xl font-display font-bold text-navy">Our Services</h2>
+            <button 
+              onClick={() => navigate('/services')}
+              className="text-gold text-[10px] font-bold uppercase tracking-[0.2em] flex items-center gap-2"
+            >
+              View All <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-5">
+            {SERVICES.slice(0, 4).map((service) => {
+              const Icon = getServiceIcon(service.category);
+              return (
                 <motion.button
                   key={service.id}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => navigate(`/service/${service.id}`)}
-                  className="p-6 rounded-[32px] bg-white border border-navy/5 shadow-sm flex flex-col gap-4 text-left group"
+                  className="p-8 rounded-[40px] bg-white border border-navy/5 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col gap-6 text-left group transition-all hover:shadow-xl hover:shadow-navy/5"
                 >
-                  <div className="w-12 h-12 rounded-2xl bg-navy/5 flex items-center justify-center text-navy/40 group-hover:bg-gold/10 group-hover:text-gold transition-colors">
-                    <Zap className="w-6 h-6" />
+                  <div className="w-12 h-12 rounded-2xl bg-navy/5 flex items-center justify-center text-navy/20 group-hover:bg-gold/10 group-hover:text-gold transition-colors">
+                    <Icon className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="font-bold text-navy text-sm">{service.name}</p>
-                    <p className="text-[10px] text-navy/40 font-medium mt-0.5">Starting ₹{service.price}</p>
+                    <p className="font-bold text-navy text-base leading-tight">{service.name}</p>
+                    <p className="text-[10px] text-navy/30 font-bold uppercase tracking-widest mt-2">From ₹{service.price}</p>
                   </div>
                 </motion.button>
-              ))}
-            </div>
-          </section>
+              );
+            })}
+          </div>
+        </section>
 
-          <section className="bg-navy rounded-[40px] p-8 text-warm-white relative overflow-hidden">
-            <div className="relative z-10">
-              <Badge className="bg-gold text-navy border-none mb-4 font-bold">ANNUAL PLANS</Badge>
-              <h3 className="text-2xl font-display font-bold text-gold mb-2 leading-tight">Coolzo Protection</h3>
-              <p className="text-warm-white/60 text-sm mb-6 leading-relaxed">
-                Get 4 services a year, priority support, and 20% off on parts.
-              </p>
-              <Button 
-                className="w-full h-14 rounded-2xl bg-gold text-navy hover:bg-gold/90 font-bold"
-                onClick={() => navigate('/amc-plans')}
-              >
-                Compare Plans
-              </Button>
+        <section className="bg-gold/5 rounded-[40px] p-10 border border-gold/10 relative overflow-hidden">
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-gold/20 flex items-center justify-center text-gold">
+                <Crown className="w-5 h-5" />
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-navy/40">AMC Membership</span>
             </div>
-            <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-gold/10 rounded-full blur-3xl" />
-          </section>
-        </div>
+            <h3 className="text-2xl font-display font-bold text-navy mb-3 leading-tight">Vento Protection Plan</h3>
+            <p className="text-navy/50 text-sm mb-8 leading-relaxed">
+              Enjoy priority support, 4 free services, and 20% discount on all spare parts.
+            </p>
+            <Button 
+              variant="outline"
+              className="w-full h-14 rounded-2xl border-navy/10 text-navy hover:bg-navy hover:text-gold font-bold transition-all"
+              onClick={() => navigate('/amc-plans')}
+            >
+              Explore Plans
+            </Button>
+          </div>
+        </section>
       </div>
     );
   }
 
   return (
-    <div className="pb-24">
-      {/* App Bar */}
-      <div className="sticky top-0 z-30 bg-warm-white/80 backdrop-blur-md px-6 py-4 flex items-center justify-between">
-        <div className="flex flex-col">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-navy/40">Welcome back,</span>
-          <span className="text-xl font-display font-bold text-navy">{user?.name.split(' ')[0]}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => navigate('/search')}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm border border-navy/5 text-navy"
-          >
-            <Search className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={() => navigate('/app/notifications')}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm border border-navy/5 text-navy relative"
-          >
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-gold rounded-full border-2 border-white" />
-          </button>
-        </div>
-      </div>
-
-      <div className="px-6 py-8 space-y-10">
-        {/* Active Job Card */}
+    <div className="px-6 pt-2 pb-20 space-y-6">
+      {/* Active Job Card */}
         {activeJob && (
           <section>
             <div className="flex items-center justify-between mb-4 px-2">
@@ -195,16 +215,13 @@ const HomeTab = () => {
                 <span className="text-[10px] font-bold uppercase tracking-widest text-gold">Live Tracking</span>
               </div>
             </div>
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="bg-white rounded-[40px] p-8 border-2 border-gold shadow-xl shadow-gold/5 relative overflow-hidden group"
+            <div className="bg-white rounded-[40px] p-8 border-2 border-gold shadow-xl shadow-gold/5 relative overflow-hidden group"
               onClick={() => navigate(`/job-tracker/${activeJob.id}`)}
             >
               <div className="flex items-start justify-between mb-6">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-2xl bg-gold/10 flex items-center justify-center text-gold">
-                    <Zap className="w-7 h-7" />
+                    {React.createElement(getIconByServiceName(activeJob.serviceType), { className: "w-7 h-7" })}
                   </div>
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40">{activeJob.srNumber}</p>
@@ -227,7 +244,7 @@ const HomeTab = () => {
                   Track Job
                 </Button>
               </div>
-            </motion.div>
+            </div>
           </section>
         )}
 
@@ -236,10 +253,10 @@ const HomeTab = () => {
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mb-4 px-2">Quick Actions</h3>
           <div className="grid grid-cols-4 gap-4">
             {[
-              { label: 'Book', icon: Zap, path: '/book', color: 'bg-gold/10 text-gold' },
-              { label: 'Jobs', icon: Calendar, path: '/app/jobs', color: 'bg-navy/5 text-navy/40' },
-              { label: 'Units', icon: ShieldCheck, path: '/app/equipment', color: 'bg-navy/5 text-navy/40' },
-              { label: 'Help', icon: MessageSquare, path: '/contact', color: 'bg-navy/5 text-navy/40' },
+              { label: 'Book', path: '/book', icon: PlusCircle, color: 'bg-gold/10 text-gold shadow-sm' },
+              { label: 'Jobs', path: '/app/jobs', icon: Briefcase, color: 'bg-navy/5 text-navy/40' },
+              { label: 'Units', path: '/app/equipment', icon: Wind, color: 'bg-navy/5 text-navy/40' },
+              { label: 'Help', path: '/contact', icon: MessageSquare, color: 'bg-navy/5 text-navy/40' },
             ].map((action, i) => (
               <button 
                 key={i}
@@ -247,7 +264,7 @@ const HomeTab = () => {
                 className="flex flex-col items-center gap-3 group"
               >
                 <div className={cn(
-                  "w-16 h-16 rounded-[24px] flex items-center justify-center transition-all group-active:scale-90",
+                  "w-16 h-16 rounded-[24px] flex items-center justify-center transition-all group-active:scale-95",
                   action.color
                 )}>
                   <action.icon className="w-6 h-6" />
@@ -270,9 +287,6 @@ const HomeTab = () => {
                 <div>
                   <h4 className="text-xl font-display font-bold text-gold">{amc.planName}</h4>
                   <p className="text-warm-white/40 text-[10px] font-bold uppercase tracking-widest mt-1">Valid until {amc.endDate}</p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-gold/20 flex items-center justify-center text-gold">
-                  <Crown className="w-6 h-6" />
                 </div>
               </div>
               
@@ -304,20 +318,15 @@ const HomeTab = () => {
                 onClick={() => navigate(`/booking-detail/${job.id}`)}
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-navy/5 flex items-center justify-center text-navy/20">
-                    <CheckCircle2 className="w-5 h-5" />
-                  </div>
                   <div>
                     <p className="font-bold text-navy text-sm">{job.serviceType}</p>
                     <p className="text-[10px] text-navy/40 font-medium uppercase tracking-widest mt-0.5">{job.date}</p>
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-navy/20 group-hover:text-gold transition-colors" />
               </div>
             ))}
           </div>
         </section>
-      </div>
     </div>
   );
 };
@@ -352,27 +361,30 @@ const BookTab = () => {
   };
 
   return (
-    <div className="px-6 py-8">
-      <h1 className="text-2xl font-display font-bold text-navy mb-2">Book a Service</h1>
-      <p className="text-navy/60 text-sm mb-8">Select a category to start your booking.</p>
+    <div className="px-6 pt-2 pb-20 space-y-6">
+      <h1 className="text-2xl font-display font-bold text-navy mb-1">Book a Service</h1>
+      <p className="text-navy/60 text-xs mb-6">Select a category to start your booking.</p>
       
       <div className="grid grid-cols-2 gap-4">
-        {SERVICES.map((service) => (
-          <motion.button
-            key={service.id}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => handleQuickStart(service.id)}
-            className="p-6 rounded-[32px] bg-white border border-navy/5 shadow-sm flex flex-col gap-4 text-left group"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-navy/5 flex items-center justify-center text-navy/40 group-hover:bg-gold/10 group-hover:text-gold transition-colors">
-              <Zap className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="font-bold text-navy text-sm">{service.name}</p>
-              <p className="text-[10px] text-navy/40 font-medium mt-0.5">Starting ₹{service.price}</p>
-            </div>
-          </motion.button>
-        ))}
+        {SERVICES.map((service) => {
+          const Icon = getServiceIcon(service.category);
+          return (
+            <motion.button
+              key={service.id}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleQuickStart(service.id)}
+              className="p-6 rounded-[32px] bg-white border border-navy/5 shadow-sm flex flex-col gap-4 text-left group"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-navy/5 flex items-center justify-center text-navy/40 group-hover:bg-gold/10 group-hover:text-gold transition-colors">
+                <Icon className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="font-bold text-navy text-sm">{service.name}</p>
+                <p className="text-[10px] text-navy/40 font-medium mt-0.5">Starting ₹{service.price}</p>
+              </div>
+            </motion.button>
+          );
+        })}
       </div>
 
       <Button 
@@ -430,7 +442,7 @@ const JobsTab = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[80vh] px-8 text-center">
+      <div className="flex flex-col items-center justify-center min-h-[70vh] px-8 pb-32 text-center">
         <div className="w-24 h-24 bg-navy/5 rounded-full flex items-center justify-center mb-6">
           <Briefcase className="w-10 h-10 text-navy/20" />
         </div>
@@ -447,40 +459,61 @@ const JobsTab = () => {
   }
 
   return (
-    <div className="px-6 py-8">
-      <h1 className="text-2xl font-display font-bold text-navy mb-8">My Jobs</h1>
+    <div className="px-6 pt-2 pb-20 space-y-6">
+      <div className="flex flex-col">
+        <h1 className="text-2xl font-display font-bold text-navy mb-1">My Bookings</h1>
+        <p className="text-navy/60 text-xs">Track and manage your service requests.</p>
+      </div>
+
       <div className="space-y-4">
-        <div className="bg-white p-6 rounded-3xl border-2 border-gold shadow-sm">
-          <div className="flex justify-between items-start mb-4">
-            <Badge className="bg-gold text-navy border-none font-bold">In Progress</Badge>
-            <span className="text-[10px] font-bold text-navy/40 uppercase">#CZ-8821</span>
-          </div>
-          <h3 className="font-bold text-navy mb-1">Deep Jet Cleaning</h3>
-          <p className="text-xs text-navy/60 mb-4">Scheduled for Today, 12:45 PM</p>
-          <Button className="w-full bg-navy text-gold rounded-xl font-bold">Track Technician</Button>
-        </div>
-        <div className="bg-white p-6 rounded-3xl border border-navy/5 shadow-sm opacity-60">
-          <div className="flex justify-between items-start mb-4">
-            <Badge variant="secondary" className="bg-navy/5 text-navy/40 border-none font-bold">Completed</Badge>
-            <span className="text-[10px] font-bold text-navy/40 uppercase">#CZ-7712</span>
-          </div>
-          <h3 className="font-bold text-navy mb-1">Split AC Repair</h3>
-          <p className="text-xs text-navy/60">June 12, 2023</p>
-        </div>
+        {JOBS.map((job) => (
+          <motion.div
+            key={job.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-[32px] p-6 border border-navy/5 shadow-sm group active:scale-[0.98] transition-transform"
+            onClick={() => navigate(`/booking-detail/${job.id}`)}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-navy/5 flex items-center justify-center text-navy/40">
+                  {job.status === 'Completed' ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40">{job.srNumber}</p>
+                  <h3 className="font-bold text-navy">{job.serviceType}</h3>
+                </div>
+              </div>
+              <Badge className={cn(
+                "border-none font-bold text-[10px] uppercase tracking-widest px-3 py-1",
+                job.status === 'Completed' ? "bg-green-50 text-green-600" : "bg-gold/10 text-gold"
+              )}>
+                {job.status}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between pt-4 border-t border-navy/5">
+              <div className="flex items-center gap-2 text-navy/60">
+                <Calendar className="w-4 h-4" />
+                <span className="text-xs font-medium">{job.date}</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-navy/20 group-hover:text-gold transition-colors" />
+            </div>
+          </motion.div>
+        ))}
       </div>
     </div>
   );
 };
 
+
 const AccountTab = () => {
   const { user, logout, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
-  const overdueInvoices = INVOICES.filter(inv => inv.status === 'Overdue').length;
   const unreadTickets = SUPPORT_TICKETS.filter(t => t.status === 'In Progress').length; // Mocking unread as In Progress
 
   if (!isAuthenticated) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[80vh] px-8 text-center">
+      <div className="flex flex-col items-center justify-center min-h-[70vh] px-8 pb-32 text-center">
         <div className="w-24 h-24 bg-navy/5 rounded-full flex items-center justify-center mb-6">
           <User className="w-10 h-10 text-navy/20" />
         </div>
@@ -497,62 +530,66 @@ const AccountTab = () => {
   }
 
   const menuItems = [
-    { icon: FileText, label: 'My Invoices', path: '/app/invoices', badge: overdueInvoices > 0 ? overdueInvoices : null },
     { icon: MessageSquare, label: 'My Support', path: '/app/support', badge: unreadTickets > 0 ? unreadTickets : null },
-    { icon: Tag, label: 'Special Offers', path: '/app/offers' },
-    { icon: Trophy, label: 'Loyalty Rewards', path: '/app/rewards' },
-    { icon: Heart, label: 'Refer a Friend', path: '/app/refer' },
+    ...(FEATURE_FLAGS.SHOW_SPECIAL_OFFERS ? [{ icon: Tag, label: 'Special Offers', path: '/app/offers' }] : []),
+    ...(FEATURE_FLAGS.SHOW_LOYALTY_REWARDS ? [{ icon: Trophy, label: 'Loyalty Rewards', path: '/app/rewards' }] : []),
+    ...(FEATURE_FLAGS.SHOW_REFER_FRIEND ? [{ icon: Heart, label: 'Refer a Friend', path: '/app/refer' }] : []),
     { icon: User, label: 'My Profile', path: '/app/profile-settings' },
     { icon: MapPin, label: 'My Addresses', path: '/app/addresses' },
     { icon: Bell, label: 'Notification Preferences', path: '/app/notification-preferences' },
-    { icon: ShieldCheck, label: 'App Permissions', path: '/app/permissions' },
-    { icon: Sparkles, label: "What's New", path: '/app/changelog' },
+    ...(FEATURE_FLAGS.SHOW_APP_PERMISSIONS ? [{ icon: ShieldCheck, label: 'App Permissions', path: '/app/permissions' }] : []),
+    ...(FEATURE_FLAGS.SHOW_WHATS_NEW ? [{ icon: Sparkles, label: "What's New", path: '/app/changelog' }] : []),
     { icon: Shield, label: 'Privacy Policy', path: '/app/privacy' },
     { icon: Lock, label: 'Terms & Conditions', path: '/app/terms' },
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-warm-white pb-32">
-      {/* Profile Header */}
-      <div className="px-6 py-10 bg-navy text-warm-white rounded-b-[40px] relative overflow-hidden">
-        <div className="relative z-10 flex items-center gap-6">
-          <div className="w-20 h-20 rounded-[28px] bg-gold/20 border-2 border-gold/30 flex items-center justify-center overflow-hidden">
+    <div className="px-6 pt-2 pb-20 space-y-6">
+      <div className="flex flex-col">
+        <h1 className="text-2xl font-display font-bold text-navy mb-1">My Account</h1>
+        <p className="text-navy/60 text-xs">Manage your profile and preferences.</p>
+      </div>
+
+      {/* Profile Card */}
+      <div className="bg-navy rounded-[32px] p-6 text-warm-white relative overflow-hidden">
+        <div className="relative z-10 flex items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-gold/20 border border-gold/30 flex items-center justify-center overflow-hidden">
             <img src={`https://i.pravatar.cc/150?u=${user?.email}`} alt="Profile" className="w-full h-full object-cover" />
           </div>
           <div>
-            <h1 className="text-2xl font-display font-bold text-gold">{user?.name}</h1>
-            <p className="text-warm-white/40 text-[10px] font-bold uppercase tracking-widest mt-1">Member since Jan 2024</p>
-            <Badge className="mt-3 bg-gold/10 text-gold border-none font-bold text-[10px] uppercase tracking-widest">
-              {user?.membershipStatus} Member
-            </Badge>
+            <h2 className="text-lg font-display font-bold text-gold">{user?.name}</h2>
+            <p className="text-warm-white/40 text-[10px] font-bold uppercase tracking-widest mt-0.5">{user?.membershipStatus} Member</p>
           </div>
         </div>
-        <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-gold/5 rounded-full blur-3xl" />
+        <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-gold/5 rounded-full blur-3xl" />
       </div>
 
       {/* Stats Row */}
-      <div className="px-6 -mt-8 relative z-20">
-        <div className="bg-white rounded-3xl p-6 border border-navy/5 shadow-xl shadow-navy/5 grid grid-cols-3 gap-4">
+      <div className={cn(
+        "bg-white rounded-3xl p-6 border border-navy/5 shadow-sm grid gap-4",
+        FEATURE_FLAGS.SHOW_LOYALTY_REWARDS ? "grid-cols-3" : "grid-cols-2"
+      )}>
+        <div className="text-center">
+          <p className="text-xl font-display font-bold text-navy">{JOBS.length}</p>
+          <p className="text-[8px] font-bold uppercase tracking-widest text-navy/40 mt-1">Total Jobs</p>
+        </div>
+        <div className={cn(
+          "text-center",
+          FEATURE_FLAGS.SHOW_LOYALTY_REWARDS ? "border-x border-navy/5" : "border-l border-navy/5"
+        )}>
+          <p className="text-xl font-display font-bold text-gold">Active</p>
+          <p className="text-[8px] font-bold uppercase tracking-widest text-navy/40 mt-1">AMC Status</p>
+        </div>
+        {FEATURE_FLAGS.SHOW_LOYALTY_REWARDS && (
           <div className="text-center">
-            <p className="text-xl font-display font-bold text-navy">{JOBS.length}</p>
-            <p className="text-[8px] font-bold uppercase tracking-widest text-navy/40 mt-1">Total Jobs</p>
-          </div>
-          <div className="text-center border-x border-navy/5">
-            <p className="text-xl font-display font-bold text-gold">Active</p>
-            <p className="text-[8px] font-bold uppercase tracking-widest text-navy/40 mt-1">AMC Status</p>
-          </div>
-          <div 
-            className="text-center cursor-pointer active:scale-95 transition-transform"
-            onClick={() => navigate('/app/rewards')}
-          >
             <p className="text-xl font-display font-bold text-navy">450</p>
             <p className="text-[8px] font-bold uppercase tracking-widest text-navy/40 mt-1">Points</p>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Menu List */}
-      <div className="px-6 py-10 space-y-3">
+      <div className="space-y-3">
         {menuItems.map((item, i) => (
           <button 
             key={i} 
@@ -560,9 +597,6 @@ const AccountTab = () => {
             className="w-full flex items-center justify-between p-5 bg-white rounded-2xl border border-navy/5 group active:scale-[0.98] transition-all"
           >
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-navy/5 flex items-center justify-center text-navy/40 group-hover:bg-gold/10 group-hover:text-gold transition-colors">
-                <item.icon className="w-5 h-5" />
-              </div>
               <span className="font-bold text-navy text-sm">{item.label}</span>
             </div>
             <div className="flex items-center gap-3">
@@ -571,11 +605,10 @@ const AccountTab = () => {
                   {item.badge}
                 </span>
               )}
-              <ChevronRight className="w-4 h-4 text-navy/20 group-hover:text-gold transition-colors" />
             </div>
           </button>
         ))}
-
+        
         <Button 
           variant="ghost" 
           className="w-full mt-6 text-red-500 hover:text-red-600 hover:bg-red-50 font-bold h-14 rounded-2xl gap-3"
@@ -592,24 +625,160 @@ const AccountTab = () => {
   );
 };
 
+const AboutTab = () => {
+  return (
+    <div className="px-6 pt-2 pb-20 space-y-8">
+      {/* Hero Section */}
+      <section className="space-y-4">
+        <div className="px-2">
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-gold mb-1">The Coolzo Standard</h3>
+          <h1 className="text-3xl font-display font-bold text-navy leading-tight">A New Paradigm in Home Comfort</h1>
+          <p className="text-navy/60 text-xs leading-relaxed max-w-sm">
+            Coolzo was founded on a simple principle: cooling should be precise, professional, and entirely headache-free.
+          </p>
+        </div>
+        
+        <div className="grid gap-4">
+          <div className="bg-white rounded-[32px] p-8 border border-navy/5 shadow-sm">
+            <div className="w-12 h-12 rounded-2xl bg-gold/10 flex items-center justify-center text-gold mb-6">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <h4 className="text-lg font-display font-bold text-navy mb-2">Certified Expertise</h4>
+            <p className="text-navy/50 text-sm leading-relaxed">
+              Our technicians are master-certified individuals who undergo 200+ hours of precision training and background verification.
+            </p>
+          </div>
+
+          <div className="bg-navy rounded-[32px] p-8 text-warm-white relative overflow-hidden">
+            <div className="relative z-10">
+              <div className="w-12 h-12 rounded-2xl bg-gold/20 flex items-center justify-center text-gold mb-6">
+                <Zap className="w-6 h-6" />
+              </div>
+              <h4 className="text-lg font-display font-bold text-gold mb-2">Technological Precision</h4>
+              <p className="text-warm-white/40 text-sm leading-relaxed">
+                From real-time GPS tracking to AI-assisted fault diagnosis, we use technology to deliver a superior service experience.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gold/5 rounded-[40px] p-10 border border-gold/10 text-center space-y-6">
+          <div className="flex justify-center">
+            <div className="flex -space-x-3">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="w-12 h-12 rounded-full border-4 border-white bg-navy/5 overflow-hidden">
+                  <img src={`https://i.pravatar.cc/150?u=user${i}`} alt="Avatar" className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <p className="text-navy/60 text-sm italic font-serif px-4 leading-relaxed">
+            "Coolzo transformed how we think about home comfort. The precision and digital tracking are unmatched in the current market."
+          </p>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-gold font-display">— Trusted by 50,000+ Homes</div>
+        </div>
+      </section>
+
+      {/* Philosophy Section */}
+      <section className="space-y-8">
+        <h2 className="text-2xl font-display font-bold text-navy px-2 text-center">Our Core Philosophy</h2>
+        <div className="space-y-4">
+          {[
+            { title: 'Reliability', desc: 'When we say 9 AM, we mean 9 AM. Our reliability is our bond.' },
+            { title: 'Transparency', desc: 'Upfront pricing and clear digital receipts. No hidden surprises.' },
+            { title: 'Excellence', desc: 'Good is not enough. We strive for excellence in every nut tightened.' }
+          ].map((item, i) => (
+            <div key={i} className="flex gap-6 items-start p-4 hover:bg-navy/[0.02] rounded-3xl transition-colors">
+              <div className="text-gold font-display font-bold text-2xl leading-none">0{i+1}</div>
+              <div className="space-y-1">
+                <h4 className="font-bold text-navy uppercase tracking-widest text-xs">{item.title}</h4>
+                <p className="text-navy/50 text-xs leading-relaxed">{item.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+};
+
 // --- Main Shell ---
+
+const GlobalHeader = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuthStore();
+
+  return (
+    <div className="sticky top-0 z-30 bg-warm-white/80 backdrop-blur-md px-6 py-3 flex items-center justify-between">
+      <div className="flex flex-col">
+        {isAuthenticated ? (
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-navy/40">Welcome back,</span>
+            <span className="text-lg font-display font-bold text-navy leading-none">{user?.name.split(' ')[0]}</span>
+          </div>
+        ) : (
+          <Logo className="scale-90 origin-left" />
+        )}
+      </div>
+      <div className="flex items-center gap-3">
+        {isAuthenticated && (
+          <button 
+            onClick={() => {
+              if (location.pathname !== '/app/notifications') {
+                navigate('/app/notifications');
+              }
+            }}
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm border border-navy/5 text-navy relative"
+          >
+            <Bell className="w-5 h-5" />
+            <div className="absolute top-2.5 right-2.5 w-2 h-2 bg-gold border-2 border-white rounded-full" />
+          </button>
+        )}
+        <button 
+          onClick={() => {
+            if (location.pathname !== '/app/account') {
+              navigate('/app/account');
+            }
+          }}
+          className="px-3 h-10 flex items-center justify-center rounded-full bg-white shadow-sm border border-navy/5 text-navy text-[10px] font-bold uppercase tracking-widest overflow-hidden"
+        >
+          {isAuthenticated && user?.email ? (
+            <img src={`https://i.pravatar.cc/150?u=${user.email}`} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            "Me"
+          )}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default function HomeShell() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { hasSeenNotificationPrompt, setHasSeenNotificationPrompt } = useAuthStore();
+  const { hasSeenNotificationPrompt, setHasSeenNotificationPrompt, isAuthenticated } = useAuthStore();
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
 
-  // Determine active tab based on path
-  const getActiveTab = () => {
-    const path = location.pathname;
-    if (path.includes('/app/book')) return 1;
-    if (path.includes('/app/jobs')) return 2;
-    if (path.includes('/app/account')) return 3;
-    return 0;
-  };
+  const tabs = useMemo(() => [
+    { icon: HomeIcon, label: 'Home', path: '/app' },
+    { icon: Calendar, label: 'Book', path: '/app/book' },
+    ...(isAuthenticated ? [
+      { icon: Briefcase, label: 'My Jobs', path: '/app/jobs' },
+      { icon: FileText, label: 'Invoices', path: '/app/invoices' }
+    ] : [
+      { icon: Info, label: 'About', path: '/app/about' }
+    ]),
+  ], [isAuthenticated]);
 
-  const activeTab = getActiveTab();
+  // Determine active tab based on path
+  const activeTab = useMemo(() => {
+    const path = location.pathname;
+    const index = tabs.findIndex(tab => {
+      if (tab.path === '/app') return path === '/app' || path === '/app/';
+      return path.startsWith(tab.path);
+    });
+    return index !== -1 ? index : 0;
+  }, [location.pathname, tabs]);
 
   useEffect(() => {
     // Show notification prompt if user hasn't seen it yet
@@ -626,33 +795,37 @@ export default function HomeShell() {
     setHasSeenNotificationPrompt(true);
   };
 
-  const overdueInvoices = INVOICES.filter(inv => inv.status === 'Overdue').length;
-  const unreadTickets = SUPPORT_TICKETS.filter(t => t.status === 'In Progress').length;
-  const totalBadgeCount = overdueInvoices + unreadTickets;
-
-  const tabs = [
-    { icon: HomeIcon, label: 'Home', path: '/app' },
-    { icon: Calendar, label: 'Book', path: '/app/book' },
-    { icon: Briefcase, label: 'My Jobs', path: '/app/jobs' },
-    { icon: User, label: 'Account', path: '/app/account', badge: totalBadgeCount > 0 ? totalBadgeCount : null },
-  ];
-
   return (
     <div className="flex flex-col min-h-screen bg-warm-white">
+      <GlobalHeader />
       <div className="flex-1 overflow-y-auto">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout">
           <motion.div
             key={location.pathname}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.2 }}
+            className="w-full"
           >
-            <Routes>
+            <Routes location={location}>
               <Route path="/" element={<HomeTab />} />
               <Route path="/book" element={<BookTab />} />
+              <Route path="/about" element={<AboutTab />} />
               <Route path="/jobs" element={<JobsTab />} />
               <Route path="/account" element={<AccountTab />} />
+              <Route path="/equipment" element={<ProtectedRoute><EquipmentList /></ProtectedRoute>} />
+              <Route path="/amc" element={<ProtectedRoute><AMCDashboard /></ProtectedRoute>} />
+              <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
+              <Route path="/support" element={<ProtectedRoute><SupportTickets /></ProtectedRoute>} />
+              <Route path="/profile-settings" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/addresses" element={<ProtectedRoute><Addresses /></ProtectedRoute>} />
+              <Route path="/notification-preferences" element={<ProtectedRoute><NotificationPreferences /></ProtectedRoute>} />
+              <Route path="/rewards" element={<ProtectedRoute><LoyaltyRewards /></ProtectedRoute>} />
+              <Route path="/offers" element={<ProtectedRoute><PromotionalOffers /></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><NotificationCentre /></ProtectedRoute>} />
+              <Route path="/permissions" element={<ProtectedRoute><PermissionsManagement /></ProtectedRoute>} />
+              <Route path="/changelog" element={<Changelog />} />
             </Routes>
           </motion.div>
         </AnimatePresence>
@@ -660,34 +833,27 @@ export default function HomeShell() {
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-navy/5 px-6 py-3 z-50">
-        <div className="max-w-md mx-auto flex items-center justify-between">
+        <div className="max-w-md mx-auto flex items-center justify-around">
           {tabs.map((tab, index) => (
             <button
               key={index}
-              onClick={() => navigate(tab.path)}
+              onClick={() => {
+                if (location.pathname !== tab.path && !(location.pathname === '/app/' && tab.path === '/app')) {
+                  navigate(tab.path);
+                }
+              }}
               className="flex flex-col items-center gap-1 relative py-1 px-3 group"
             >
-              <div className={cn(
-                "transition-all duration-300 relative",
-                activeTab === index ? "text-gold -translate-y-1" : "text-navy/30"
-              )}>
-                <tab.icon className={cn("w-6 h-6", activeTab === index && "fill-gold/20")} />
-                {tab.badge && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center border-2 border-white">
-                    {tab.badge}
-                  </span>
-                )}
-              </div>
               <span className={cn(
                 "text-[10px] font-bold uppercase tracking-widest transition-all duration-300",
-                activeTab === index ? "text-navy opacity-100" : "text-navy/30 opacity-0"
+                activeTab === index ? "text-gold translate-y-0 opacity-100" : "text-navy/30"
               )}>
                 {tab.label}
               </span>
               {activeTab === index && (
                 <motion.div 
                   layoutId="activeTab"
-                  className="absolute -top-1 w-1 h-1 bg-gold rounded-full"
+                  className="absolute -bottom-1 w-1 h-1 bg-gold rounded-full"
                 />
               )}
             </button>
@@ -695,10 +861,10 @@ export default function HomeShell() {
         </div>
       </div>
 
-      {/* Notification Prompt Modal */}
+      {/* Access Request Prompt Modal */}
       <AnimatePresence>
         {showNotificationPrompt && (
-          <NotificationPrompt 
+          <AccessRequestPrompt 
             onAccept={handleNotificationClose} 
             onDecline={handleNotificationClose} 
           />
