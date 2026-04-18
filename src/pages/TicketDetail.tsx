@@ -47,16 +47,17 @@ const TicketDetail = () => {
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
-        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+        <Loader2 className="w-16 h-16 text-gold animate-spin" />
       </div>
     );
   }
 
   if (!ticket) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
-        <h2 className="text-2xl font-display font-bold text-navy mb-4">Ticket Not Found</h2>
-        <Button onClick={() => navigate('/app/support')}>Back to Tickets</Button>
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center p-12 text-center relative overflow-hidden italic">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-navy/[0.02] rounded-bl-full blur-[60px]" />
+        <h2 className="text-[48px] font-display font-bold text-navy tracking-tighter leading-none mb-10 uppercase">Inquiry <span className="text-gold">Nullified.</span></h2>
+        <Button onClick={() => navigate('/app/support')} className="bg-navy text-gold font-bold rounded-[32px] px-16 h-22 shadow-3xl shadow-navy/40 uppercase tracking-[0.4em] active:scale-95 transition-all">Return to Registry</Button>
       </div>
     );
   }
@@ -67,121 +68,158 @@ const TicketDetail = () => {
     
     try {
       await SupportService.addMessage(id, 'User', newMessage);
-      toast.success('Message sent');
+      toast.success('Transmission successful');
       setNewMessage('');
     } catch (error) {
-      toast.error('Failed to send message');
+      toast.error('Signal failure');
     }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-warm-white">
-      {/* Header */}
-      <div className="bg-white px-6 pt-12 pb-6 border-b border-navy/5 z-30">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
+    <div className="flex flex-col h-screen bg-warm-white relative overflow-hidden">
+      {/* Background Ambience */}
+      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-navy/[0.02] rounded-full blur-[160px] -mr-60 -mt-60 pointer-events-none" />
+
+      {/* Liaison Header */}
+      <div className="bg-navy px-8 pt-16 pb-16 text-warm-white rounded-b-[84px] relative overflow-hidden shadow-3xl shadow-navy/60 z-50">
+        <div className="flex items-center justify-between gap-8 mb-12 relative z-10 italic">
+          <div className="flex items-center gap-8">
             <button 
               onClick={() => navigate(-1)}
-              className="w-10 h-10 rounded-full bg-navy/5 flex items-center justify-center text-navy"
+              className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center text-white active:scale-90 transition-transform shadow-3xl"
             >
-              <ChevronLeft className="w-6 h-6" />
+              <ChevronLeft className="w-8 h-8" />
             </button>
-            <div>
-              <h1 className="text-lg font-display font-bold text-navy leading-tight">#{ticket.id.slice(0, 6)}</h1>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40">{ticket.category}</p>
+            <div className="space-y-2">
+              <h1 className="text-[32px] font-display font-bold text-gold tracking-tighter leading-none uppercase">Trace: {ticket.id.slice(0, 8).toUpperCase()}</h1>
+              <p className="text-warm-white/30 text-[11px] font-bold uppercase tracking-[0.4em] leading-none">{ticket.category} Protocol</p>
             </div>
           </div>
-          <button className="w-10 h-10 rounded-xl bg-navy/5 flex items-center justify-center text-navy/40">
-            <MoreVertical className="w-5 h-5" />
+          <button className="w-14 h-14 rounded-[22px] bg-white/5 flex items-center justify-center text-gold/40 active:scale-90 transition-all hover:bg-gold hover:text-navy shadow-inner border border-white/5">
+            <MoreVertical className="w-7 h-7" />
           </button>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex gap-2">
+        <div className="flex items-center justify-between relative z-10 italic">
+          <div className="flex gap-6">
             <Badge className={cn(
-              "border-none font-bold text-[8px] uppercase tracking-widest px-3 py-1",
-              ticket.status === 'Resolved' ? "bg-green-50 text-green-600" :
-              ticket.status === 'In Progress' ? "bg-amber-50 text-amber-600" :
-              "bg-blue-50 text-blue-600"
+              "border-none font-bold text-[11px] uppercase tracking-[0.4em] px-8 py-3 rounded-full shadow-3xl shadow-black/20",
+              ticket.status === 'Resolved' ? "bg-green-500/20 text-green-400" :
+              ticket.status === 'In Progress' ? "bg-amber-500/20 text-amber-400" :
+              "bg-blue-500/20 text-blue-400"
             )}>
               {ticket.status}
             </Badge>
-            <Badge variant="outline" className="border-navy/10 text-navy/40 font-bold text-[8px] uppercase tracking-widest px-3 py-1">
-              {ticket.priority} Priority
-            </Badge>
+            <div className="h-12 px-8 rounded-full border border-white/10 flex items-center gap-4 bg-white/5 shadow-inner">
+              <Clock className="w-5 h-5 text-gold/40" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-white/40">{ticket.priority || 'Normal'} Priority</span>
+            </div>
           </div>
-          {/* Removed srNumber as it's not in the interface */}
+          <div className="flex items-center gap-6">
+            <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse shadow-[0_0_15px_rgba(34,197,94,0.6)]" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.5em] text-white/20">Secure Liaison Hub</span>
+          </div>
         </div>
       </div>
 
-      {/* Chat Area */}
+      {/* Transmission Terminal (Chat) */}
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar"
+        className="flex-1 overflow-y-auto p-12 space-y-16 no-scrollbar relative z-10 pb-48 italic"
       >
-        <div className="text-center mb-8">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-navy/20">
-            Ticket created on {ticket.createdAt?.toDate ? ticket.createdAt.toDate().toLocaleString() : new Date(ticket.createdAt).toLocaleString()}
-          </p>
+        <div className="text-center mb-20">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="inline-block px-10 py-4 bg-navy/[0.03] rounded-full border border-navy/5 shadow-inner"
+          >
+            <p className="text-[11px] font-bold uppercase tracking-[0.5em] text-navy/20">
+              Protocol Document Generated • {ticket.createdAt?.toDate ? ticket.createdAt.toDate().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : new Date(ticket.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          </motion.div>
         </div>
 
-        {ticket.messages.map((msg) => (
-          <div 
-            key={msg.id}
+        {ticket.messages.map((msg, index) => (
+          <motion.div 
+            key={msg.id || index}
+            initial={{ opacity: 0, x: msg.sender === 'User' ? 40 : -40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
             className={cn(
-              "flex flex-col max-w-[85%]",
+              "flex flex-col max-w-[85%] relative group",
               msg.sender === 'User' ? "ml-auto items-end" : "mr-auto items-start"
             )}
           >
             <div className={cn(
-              "p-4 rounded-[24px] text-sm leading-relaxed shadow-sm",
+              "p-10 text-[18px] leading-relaxed shadow-3xl font-bold tracking-tight uppercase transition-all duration-700 active:scale-[0.98]",
               msg.sender === 'User' 
-                ? "bg-navy text-warm-white rounded-tr-none" 
-                : "bg-white text-navy border border-navy/5 rounded-tl-none"
+                ? "bg-navy text-warm-white rounded-[56px] rounded-tr-none shadow-navy/30" 
+                : "bg-white text-navy border border-navy/5 rounded-[56px] rounded-tl-none shadow-black/[0.02] group-hover:border-gold/30"
             )}>
               {msg.text}
             </div>
-            <div className="flex items-center gap-2 mt-2 px-1">
-              <p className="text-[8px] font-bold uppercase tracking-widest text-navy/20">
-                {msg.sender === 'Support' ? 'Coolzo Support' : 'You'} • {msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </p>
+            <div className={cn(
+              "flex items-center gap-4 mt-6 px-6 transition-opacity duration-1000",
+              msg.sender === 'User' ? "flex-row-reverse" : "flex-row"
+            )}>
+              <span className="text-[11px] font-bold uppercase tracking-[0.4em] text-navy/30">
+                {msg.sender === 'Support' ? 'Institutional Intelligence' : 'Executive Directive'}
+              </span>
+              <div className="w-1.5 h-1.5 rounded-full bg-gold/30" />
+              <span className="text-[11px] font-bold text-navy/30 uppercase tracking-[0.3em]">
+                {msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
               {msg.sender === 'User' && (
-                <CheckCircle2 className="w-2.5 h-2.5 text-gold" />
+                <div className="flex gap-0.5">
+                  <CheckCircle2 className="w-4 h-4 text-gold/40" />
+                </div>
               )}
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
-      {/* Input Area */}
-      <div className="bg-white border-t border-navy/5 p-6 pb-10">
+      {/* Input Terminal */}
+      <div className="bg-white/90 backdrop-blur-3xl border-t border-navy/5 p-10 pb-20 relative z-50 rounded-t-[72px] shadow-3xl italic">
+        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+        
         {ticket.status === 'Resolved' || ticket.status === 'Closed' ? (
-          <div className="bg-green-50 rounded-2xl p-4 text-center">
-            <p className="text-xs font-bold text-green-600">This ticket has been resolved.</p>
-            <button className="text-[10px] font-bold uppercase tracking-widest text-green-600/60 mt-1 underline">Reopen Ticket</button>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-green-500/5 rounded-[48px] p-12 text-center border border-green-500/10 flex flex-col items-center gap-6 shadow-3xl shadow-green-500/5"
+          >
+            <div className="w-16 h-16 rounded-[24px] bg-green-500/10 flex items-center justify-center text-green-600 mb-2 shadow-inner">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <p className="text-[18px] font-display font-bold text-green-600 uppercase tracking-[0.4em] leading-none">Protocol Success: Resolved</p>
+              <p className="text-[10px] font-bold text-navy/20 uppercase tracking-[0.4em]">Archived System Interaction</p>
+            </div>
+            <button className="text-[12px] font-bold uppercase tracking-[0.4em] text-navy/40 hover:text-gold transition-all border-b border-transparent hover:border-gold pb-1 italic underline-offset-8 decoration-gold decoration-2">Initiate Re-Opening Protocol</button>
+          </motion.div>
         ) : (
-          <form onSubmit={handleSendMessage} className="flex items-center gap-3">
+          <form onSubmit={handleSendMessage} className="flex items-center gap-8 max-w-4xl mx-auto">
             <button 
               type="button"
-              className="w-12 h-12 rounded-2xl bg-navy/5 flex items-center justify-center text-navy/40 active:scale-90 transition-transform"
+              className="w-20 h-20 rounded-[32px] bg-navy/[0.04] flex items-center justify-center text-navy/20 active:scale-95 transition-all hover:bg-gold/10 hover:text-gold shadow-inner border border-navy/5"
             >
-              <Paperclip className="w-5 h-5" />
+              <Paperclip className="w-8 h-8" />
             </button>
-            <div className="flex-1 relative">
+            <div className="flex-1 relative group">
               <input 
                 type="text"
-                placeholder="Type your message..."
+                placeholder="Transmission details..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                className="w-full h-12 pl-5 pr-12 bg-navy/5 rounded-2xl text-sm font-medium text-navy focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all"
+                className="w-full h-20 pl-10 pr-24 bg-navy/[0.03] rounded-[40px] text-[18px] font-bold text-navy focus:outline-none focus:bg-white focus:ring-4 focus:ring-gold/10 transition-all border border-navy/5 shadow-inner focus:shadow-3xl focus:shadow-gold/5 placeholder:text-navy/10"
               />
               <button 
                 type="submit"
                 disabled={!newMessage.trim()}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl bg-gold text-navy flex items-center justify-center disabled:opacity-30 active:scale-90 transition-transform"
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-16 h-16 rounded-[28px] bg-navy text-gold flex items-center justify-center shadow-3xl shadow-navy/40 disabled:grayscale disabled:opacity-20 active:scale-95 transition-all hover:bg-gold hover:text-navy group/send overflow-hidden"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-7 h-7 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-500" />
               </button>
             </div>
           </form>
@@ -190,5 +228,6 @@ const TicketDetail = () => {
     </div>
   );
 };
+;
 
 export default TicketDetail;

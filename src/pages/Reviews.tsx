@@ -29,127 +29,159 @@ export default function Reviews() {
     fetchReviews();
   }, [activeFilter]);
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-16 h-16 text-gold animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col min-h-screen bg-warm-white">
-      {/* Header */}
-      <div className="px-6 py-6 bg-white border-b border-navy/5 sticky top-0 z-30">
-        <div className="flex items-center gap-4 mb-6">
+    <div className="flex flex-col min-h-screen bg-warm-white pb-40 relative overflow-hidden italic">
+      {/* Background Ambience */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-navy/[0.02] rounded-full blur-[160px] -mr-40 -mt-20 pointer-events-none" />
+
+      {/* Legacy Header */}
+      <div className="bg-navy px-8 pt-20 pb-40 text-warm-white rounded-b-[84px] relative overflow-hidden shadow-3xl shadow-navy/60 z-30">
+        <div className="flex items-center gap-8 relative z-10 mb-12">
           <button 
-            onClick={() => navigate(-1)}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-navy/5 text-navy"
+            onClick={() => navigate('/app')}
+            className="w-14 h-14 flex items-center justify-center rounded-full bg-white/10 text-white active:scale-90 transition-all shadow-3xl border border-white/5"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-8 h-8" />
           </button>
-          <h1 className="text-xl font-display font-bold text-navy">Customer Reviews</h1>
+          <div className="space-y-1">
+            <h1 className="text-[32px] font-display font-bold text-gold tracking-tighter leading-none uppercase italic">Patron Registry</h1>
+            <p className="text-warm-white/30 text-[10px] font-bold uppercase tracking-[0.5em] leading-none">Institutional Quality Metrics</p>
+          </div>
         </div>
 
-        {/* Aggregate Rating */}
-        <div className="flex items-center gap-6 mb-2">
-          <div className="text-center">
-            <div className="text-4xl font-display font-bold text-navy">4.9</div>
-            <div className="flex gap-0.5 mt-1">
-              {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-3 h-3 text-gold fill-gold" />)}
+        {/* Aggregate Sentiment Matrix */}
+        <div className="flex items-center gap-12 relative z-10 px-4">
+          <div className="text-center group active:scale-95 transition-all">
+            <div className="text-[72px] font-display font-bold text-warm-white tracking-tighter leading-none mb-4 group-hover:text-gold transition-colors italic">4.9</div>
+            <div className="flex justify-center gap-1 mb-6">
+              {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-5 h-5 text-gold fill-gold drop-shadow-[0_0_12px_rgba(201,162,74,0.6)]" />)}
             </div>
-            <p className="text-[10px] text-navy/40 font-bold uppercase tracking-wider mt-2">1,240 Reviews</p>
+            <p className="text-[11px] text-warm-white/20 font-bold uppercase tracking-[0.4em] leading-none">1,240 Validated Audits</p>
           </div>
-          <div className="flex-1 space-y-1.5">
+          <div className="flex-1 space-y-4 max-w-[320px]">
             {[5, 4, 3, 2, 1].map((rating) => (
-              <div key={rating} className="flex items-center gap-3">
-                <span className="text-[10px] font-bold text-navy/40 w-2">{rating}</span>
-                <div className="flex-1 h-1.5 bg-navy/5 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gold rounded-full" 
-                    style={{ width: `${rating === 5 ? 85 : rating === 4 ? 10 : 5}%` }} 
+              <div key={rating} className="flex items-center gap-6 group/row">
+                <span className="text-[10px] font-bold text-warm-white/20 w-3 group-hover/row:text-gold transition-colors">{rating}</span>
+                <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden shadow-inner">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${rating === 5 ? 85 : rating === 4 ? 10 : 5}%` }}
+                    className="h-full bg-gold rounded-full shadow-[0_0_15px_rgba(201,162,74,0.4)]" 
                   />
                 </div>
               </div>
             ))}
           </div>
         </div>
+
+        <MessageSquare className="absolute -right-20 -bottom-20 w-[420px] h-[420px] text-warm-white/[0.02] rotate-12 pointer-events-none" />
+        <div className="absolute -left-20 -top-20 w-80 h-80 bg-gold/5 rounded-full blur-[140px] pointer-events-none" />
       </div>
 
-      {/* Filters */}
-      <div className="px-6 py-4 overflow-x-auto flex gap-2 no-scrollbar bg-warm-white">
+      {/* Filter Matrix */}
+      <div className="px-8 -mt-16 py-8 overflow-x-auto flex gap-4 no-scrollbar bg-transparent relative z-40">
         {SERVICE_CATEGORIES.map((category) => (
           <button
             key={category}
             onClick={() => setActiveFilter(category)}
             className={cn(
-              "px-5 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-300",
+              "h-14 px-10 rounded-full text-[11px] font-bold uppercase tracking-[0.4em] transition-all whitespace-nowrap border flex items-center relative active:scale-95 shadow-xl",
               activeFilter === category 
-                ? "bg-navy text-gold shadow-md shadow-navy/10" 
-                : "bg-white text-navy/40 border border-navy/5"
+                ? "bg-navy text-gold border-navy shadow-navy/30" 
+                : "bg-white text-navy/30 border-navy/5 shadow-black/5"
             )}
           >
             {category}
+            {activeFilter === category && (
+              <motion.div 
+                layoutId="filter-indicator" 
+                className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-gold" 
+              />
+            )}
           </button>
         ))}
       </div>
 
-      {/* Review List */}
-      <div className="px-6 pb-12 space-y-4">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-10 h-10 text-gold animate-spin" />
-          </div>
-        ) : (
-          <AnimatePresence mode="popLayout">
-            {reviews.map((review) => (
-              <motion.div
-                key={review.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-3xl p-6 border border-navy/5 shadow-sm"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center font-bold text-gold">
-                      {review.userName.charAt(0)}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-navy text-sm">{review.userName}</h4>
-                      <p className="text-[10px] text-navy/40 font-medium">
-                        {review.createdAt?.toDate ? review.createdAt.toDate().toLocaleDateString() : new Date(review.createdAt).toLocaleDateString()}
+      {/* Intelligence Registry */}
+      <div className="px-8 pb-32 space-y-10 relative z-30">
+        <AnimatePresence mode="popLayout">
+          {reviews.map((review) => (
+            <motion.div
+              key={review.id}
+              layout
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white rounded-[72px] p-12 border border-navy/5 shadow-3xl shadow-black/[0.01] hover:border-gold/30 hover:shadow-3xl transition-all group relative overflow-hidden"
+            >
+              <div className="flex justify-between items-start mb-10">
+                <div className="flex items-center gap-6">
+                  <div className="w-16 h-16 rounded-[24px] bg-navy text-gold flex items-center justify-center font-display font-bold text-[24px] shadow-3xl shadow-navy/20 group-hover:scale-110 transition-transform">
+                    {review.userName.charAt(0)}
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="font-display font-bold text-navy text-[20px] tracking-tighter italic uppercase">{review.userName}</h4>
+                    <div className="flex items-center gap-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                      <p className="text-[10px] text-navy/20 font-bold uppercase tracking-[0.3em]">
+                        {review.createdAt?.toDate ? review.createdAt.toDate().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : new Date(review.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
-                  <div className="flex gap-0.5">
-                    {[...Array(5)].map((_, i) => (
-                      <Star 
-                        key={i} 
-                        className={cn(
-                          "w-3 h-3",
-                          i < review.rating ? "text-gold fill-gold" : "text-navy/10"
-                        )} 
-                      />
-                    ))}
-                  </div>
                 </div>
-
-                <p className="text-navy/70 text-sm leading-relaxed mb-4">
-                  "{review.comment}"
-                </p>
-
-                <div className="flex items-center justify-between pt-4 border-t border-navy/5">
-                  <Badge variant="secondary" className="bg-gold/5 text-gold border-none text-[10px] font-bold">
-                    {review.serviceId ? 'Service Review' : 'General'}
-                  </Badge>
-                  <button className="flex items-center gap-1.5 text-navy/40 hover:text-navy transition-colors">
-                    <ThumbsUp className="w-3.5 h-3.5" />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Helpful</span>
-                  </button>
+                <div className="flex gap-1 bg-gold/5 px-4 py-2 rounded-full border border-gold/10">
+                  {[...Array(5)].map((_, i) => (
+                    <Star 
+                      key={i} 
+                      className={cn(
+                        "w-4 h-4 transition-all duration-500",
+                        i < review.rating ? "text-gold fill-gold" : "text-navy/5"
+                      )} 
+                    />
+                  ))}
                 </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        )}
+              </div>
+
+              <p className="text-navy/60 text-[18px] leading-relaxed italic font-bold uppercase tracking-tight mb-12 pl-8 border-l-4 border-gold/20">
+                "{review.comment}"
+              </p>
+
+              <div className="flex items-center justify-between pt-10 border-t border-navy/5">
+                <Badge variant="secondary" className="bg-navy/5 text-navy/30 border-none text-[10px] font-bold uppercase tracking-[0.4em] px-6 py-2 rounded-full">
+                  {review.serviceId ? 'Institutional Feedback' : 'Global Audit'}
+                </Badge>
+                <button className="flex items-center gap-3 text-gold/40 hover:text-gold transition-all active:scale-90 group/like">
+                  <ThumbsUp className="w-4 h-4 group-hover:-translate-y-1 transition-transform" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.3em]">Authorize Engagement</span>
+                </button>
+              </div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gold/[0.01] rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity" />
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
         {!isLoading && reviews.length === 0 && (
-          <div className="text-center py-20">
-            <MessageSquare className="w-12 h-12 text-navy/10 mx-auto mb-4" />
-            <p className="text-navy/40 font-medium">No reviews for this category yet.</p>
+          <div className="py-40 text-center">
+            <div className="w-24 h-24 bg-navy/5 rounded-[48px] flex items-center justify-center mx-auto mb-10 shadow-inner">
+               <MessageSquare className="w-12 h-12 text-navy/10" />
+            </div>
+            <h3 className="text-[20px] font-display font-bold text-navy uppercase italic mb-4">Registry Nullified</h3>
+            <p className="text-[11px] font-bold text-navy/20 uppercase tracking-[0.3em] max-w-[240px] mx-auto mb-10 leading-loose">No feedback signatures detected within this specific operational category.</p>
+            <Button 
+               variant="outline"
+               onClick={() => setActiveFilter('All')}
+               className="rounded-full border-navy/10 text-navy font-bold text-[10px] uppercase tracking-[0.3em] px-10 h-14 hover:bg-navy hover:text-gold transition-all"
+            >
+               Reset Matrix
+            </Button>
           </div>
         )}
       </div>

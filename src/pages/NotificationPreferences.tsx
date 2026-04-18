@@ -67,95 +67,102 @@ const NotificationPreferences = () => {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-warm-white">
+    <div className="flex flex-col min-h-screen bg-warm-white pb-32">
       {/* Header */}
-      <div className="bg-white px-6 pt-12 pb-6 border-b border-navy/5 sticky top-0 z-30">
-        <div className="flex items-center gap-4">
+      <div className="bg-white px-6 pt-16 pb-8 border-b border-navy/5 sticky top-0 z-40 shadow-sm backdrop-blur-sm bg-white/90">
+        <div className="flex items-center gap-5">
           <button 
             onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-full bg-navy/5 flex items-center justify-center text-navy"
+            className="w-11 h-11 rounded-full bg-navy/5 flex items-center justify-center text-navy active:scale-90 transition-transform"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-xl font-display font-bold text-navy">Notification Preferences</h1>
+          <div>
+            <h1 className="text-[20px] font-display font-bold text-navy tracking-tight">Signal Calibration</h1>
+            <p className="text-[10px] font-bold text-navy/30 uppercase tracking-[0.2em] mt-0.5">Communication Preferences</p>
+          </div>
         </div>
       </div>
 
-      <div className="p-6 space-y-8 pb-32">
+      <div className="px-6 py-10 space-y-10 pb-40">
         {/* Info Card */}
-        <div className="bg-blue-50 rounded-3xl p-6 flex gap-4">
-          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-            <Info className="w-5 h-5" />
+        <div className="bg-navy rounded-[32px] p-8 flex gap-6 shadow-2xl shadow-navy/20 relative overflow-hidden">
+          <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-gold shrink-0 border border-white/5 relative z-10">
+            <Info className="w-6 h-6" />
           </div>
-          <p className="text-xs text-blue-700 leading-relaxed font-medium">
-            Critical updates like OTPs and booking confirmations are mandatory and cannot be disabled.
+          <p className="text-[12px] text-warm-white/60 leading-relaxed font-bold uppercase tracking-[0.1em] relative z-10">
+            Critical updates like <span className="text-gold">Secure OTPs</span> and <span className="text-gold">Deployment Confirmations</span> are hard-coded for system integrity and cannot be disabled.
           </p>
+          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gold/5 rounded-full blur-2xl" />
         </div>
 
         {/* Preferences List */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-[32px] p-6 border border-navy/5 shadow-sm">
-            <div className="mb-6">
-              <h3 className="font-bold text-navy mb-1">Communication Channels</h3>
-              <p className="text-navy/40 text-[10px] font-medium leading-relaxed">Choose how you want to receive updates from us.</p>
+        <div className="space-y-10">
+          <div className="bg-white rounded-[40px] p-10 border border-navy/5 shadow-sm">
+            <div className="mb-10 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-navy text-[17px] tracking-tight">Transmission Channels</h3>
+                <p className="text-navy/30 text-[10px] font-bold uppercase tracking-[0.2em] mt-1.5">Select primary downlink methods</p>
+              </div>
+              <Smartphone className="w-5 h-5 text-gold/40" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               {[
-                { id: 'push', icon: Bell, label: 'Push Notifications' },
-                { id: 'whatsapp', icon: MessageSquare, label: 'WhatsApp' },
-                { id: 'email', icon: Mail, label: 'Email' },
-                { id: 'sms', icon: Smartphone, label: 'SMS' }
+                { id: 'push', icon: Bell, label: 'Push Hub' },
+                { id: 'whatsapp', icon: MessageSquare, label: 'Secure WA' },
+                { id: 'email', icon: Mail, label: 'Standard E-Mail' },
+                { id: 'sms', icon: Smartphone, label: 'Legacy SMS' }
               ].map((channel) => (
                 <button
                   key={channel.id}
                   onClick={() => toggleChannel(channel.id as keyof Prefs)}
                   className={cn(
-                    "flex flex-col items-center gap-3 p-6 rounded-3xl border transition-all",
+                    "flex flex-col items-center gap-4 p-6 rounded-[32px] border transition-all active:scale-95",
                     prefs?.[channel.id as keyof Prefs]
-                      ? "bg-gold/10 border-gold text-gold"
+                      ? "bg-gold/5 border-gold text-gold shadow-xl shadow-gold/5"
                       : "bg-navy/5 border-transparent text-navy/20"
                   )}
                 >
                   <channel.icon className="w-6 h-6" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">{channel.label}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em]">{channel.label}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="bg-white rounded-[32px] p-6 border border-navy/5 shadow-sm">
-            <div className="mb-6">
-              <h3 className="font-bold text-navy mb-1">Content Preferences</h3>
-              <p className="text-navy/40 text-[10px] font-medium leading-relaxed">Select the type of content you want to see.</p>
+          <div className="bg-white rounded-[40px] p-10 border border-navy/5 shadow-sm">
+            <div className="mb-10">
+              <h3 className="font-bold text-navy text-[17px] tracking-tight">Intelligence Payload</h3>
+              <p className="text-navy/30 text-[10px] font-bold uppercase tracking-[0.2em] mt-1.5">Configure automated broadcast metrics</p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {[
-                { id: 'offers', label: 'Offers & Promotions', desc: 'Get notified about exclusive deals' },
-                { id: 'updates', label: 'Service Updates', desc: 'New features and service improvements' }
+                { id: 'offers', label: 'Commercial Dispatches', desc: 'Promotional engagements & exclusive fiscal offers' },
+                { id: 'updates', label: 'System Iterations', desc: 'Protocol updates and feature deployment logs' }
               ].map((item) => (
                 <button
                   key={item.id}
                   onClick={() => toggleChannel(item.id as keyof Prefs)}
                   className={cn(
-                    "w-full flex items-center justify-between p-4 rounded-2xl border transition-all",
+                    "w-full flex items-center justify-between p-7 rounded-[32px] border transition-all active:scale-[0.98]",
                     prefs?.[item.id as keyof Prefs]
                       ? "bg-gold/5 border-gold/20"
-                      : "bg-white border-navy/5"
+                      : "bg-white border-navy/5 shadow-inner"
                   )}
                 >
-                  <div className="text-left">
-                    <p className="text-sm font-bold text-navy">{item.label}</p>
-                    <p className="text-[10px] text-navy/40 font-medium">{item.desc}</p>
+                  <div className="text-left flex-1 pr-6">
+                    <p className="text-[15px] font-bold text-navy leading-tight">{item.label}</p>
+                    <p className="text-[10px] text-navy/40 font-bold uppercase tracking-[0.1em] mt-2 leading-relaxed">{item.desc}</p>
                   </div>
                   <div className={cn(
-                    "w-10 h-6 rounded-full relative transition-colors",
-                    prefs?.[item.id as keyof Prefs] ? "bg-gold" : "bg-navy/10"
+                    "w-12 h-7 rounded-full relative transition-all duration-300",
+                    prefs?.[item.id as keyof Prefs] ? "bg-gold shadow-lg shadow-gold/20" : "bg-navy/10"
                   )}>
                     <div className={cn(
-                      "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
-                      prefs?.[item.id as keyof Prefs] ? "left-5" : "left-1"
+                      "absolute top-1 w-5 h-5 bg-white rounded-full transition-all duration-300 shadow-sm",
+                      prefs?.[item.id as keyof Prefs] ? "left-6" : "left-1"
                     )} />
                   </div>
                 </button>
@@ -165,14 +172,14 @@ const NotificationPreferences = () => {
         </div>
 
         {/* Save Button */}
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-lg border-t border-navy/5 z-40">
-          <div className="max-w-md mx-auto">
+        <div className="fixed bottom-0 left-0 right-0 p-8 bg-white/90 backdrop-blur-xl border-t border-navy/5 z-50">
+          <div className="max-w-[440px] mx-auto">
             <Button 
               onClick={handleSave}
               disabled={isSaving}
-              className="w-full h-16 rounded-[24px] bg-gold text-navy font-bold text-lg shadow-xl shadow-gold/20 disabled:opacity-50"
+              className="w-full h-18 rounded-[24px] bg-navy text-gold font-bold text-[16px] uppercase tracking-[0.25em] shadow-2xl shadow-navy/30 active:scale-95 transition-all hover:bg-navy/95"
             >
-              {isSaving ? 'Saving...' : 'Save Preferences'}
+              {isSaving ? <Loader2 className="w-7 h-7 animate-spin" /> : 'Commit Preferences'}
             </Button>
           </div>
         </div>

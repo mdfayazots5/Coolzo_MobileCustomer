@@ -41,40 +41,40 @@ const DeleteAccount = () => {
       </div>
 
       <div className="p-8 space-y-8">
-        <div className="w-20 h-20 bg-red-50 rounded-[32px] flex items-center justify-center text-red-500 mx-auto mb-6">
-          <AlertTriangle className="w-10 h-10" />
+        <div className="w-16 h-16 bg-red-50 rounded-xl flex items-center justify-center text-red-500 mx-auto mb-6 shadow-sm border border-red-100">
+          <AlertTriangle className="w-8 h-8" />
         </div>
 
         <div className="text-center space-y-4">
-          <h2 className="text-2xl font-display font-bold text-navy">Are you absolutely sure?</h2>
-          <p className="text-navy/60 text-sm leading-relaxed">
-            This action is permanent. Your booking history, AMC data, and invoices will be archived for 7 years per legal requirements, but your personal data will be anonymised.
+          <h2 className="text-[20px] font-display font-bold text-navy">Are you sure?</h2>
+          <p className="text-navy/60 text-[13px] leading-relaxed font-medium max-w-[280px] mx-auto">
+            This action is permanent. Your data will be anonymised per legal requirements.
           </p>
         </div>
 
-        <div className="bg-red-50 border border-red-100 rounded-3xl p-6 space-y-4">
-          <p className="text-xs font-bold text-red-600 uppercase tracking-widest text-center">Type 'DELETE' to confirm</p>
+        <div className="bg-red-50/50 border border-red-100 rounded-xl p-6 space-y-4">
+          <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest text-center">Type 'DELETE' to confirm</p>
           <input 
             type="text"
             value={confirmText}
             onChange={(e) => setConfirmText(e.target.value)}
             placeholder="DELETE"
-            className="w-full h-14 px-5 bg-white border border-red-200 rounded-2xl text-center font-bold text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all"
+            className="w-full h-12 px-5 bg-white border border-red-200 rounded-lg text-center font-bold text-red-600 focus:outline-none focus:ring-1 focus:ring-red-500/20 transition-all placeholder:text-red-100 placeholder:tracking-widest"
           />
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 pt-4">
           <Button 
             disabled={confirmText !== 'DELETE' || isDeleting}
             onClick={handleDelete}
-            className="w-full h-16 rounded-[24px] bg-red-500 text-white font-bold text-lg shadow-xl shadow-red-500/20 disabled:opacity-30"
+            className="w-full h-14 rounded-lg bg-red-500 text-white font-bold text-[16px] shadow-xl shadow-red-500/20 disabled:opacity-30"
           >
-            {isDeleting ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Delete My Account'}
+            {isDeleting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Delete My Account'}
           </Button>
           <Button 
             variant="ghost"
             onClick={() => navigate(-1)}
-            className="w-full h-14 rounded-2xl text-navy/40 font-bold"
+            className="w-full h-12 rounded-lg text-navy/40 font-bold uppercase tracking-widest text-[12px]"
           >
             Cancel
           </Button>

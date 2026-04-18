@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 
-export default function Register() {
+const Register = () => {
   const navigate = useNavigate();
   const { setUser } = useAuthStore();
   const [step, setStep] = useState<'details' | 'otp'>('details');
@@ -24,7 +24,7 @@ export default function Register() {
     setTimeout(() => {
       setStep('otp');
       setIsLoading(false);
-      toast.info('OTP sent to your mobile number');
+      toast.info('Transmission successful. Check signals (OTP)');
     }, 1500);
   };
 
@@ -35,10 +35,10 @@ export default function Register() {
       setTimeout(() => {
         if (value === '123456') {
           setUser(MOCK_USERS[0] as any);
-          toast.success('Account created successfully!');
+          toast.success('Patron account successfully initialized');
           navigate('/app');
         } else {
-          toast.error('Invalid OTP. Try 123456');
+          toast.error('Identity verification failed. Protocol 123456 required.');
           setOtpValue('');
         }
         setIsLoading(false);
@@ -47,146 +47,160 @@ export default function Register() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-warm-white p-6">
-      <button 
-        onClick={() => step === 'otp' ? setStep('details') : navigate(-1)}
-        className="w-10 h-10 flex items-center justify-center rounded-full bg-navy/5 text-navy mb-8"
-      >
-        <ArrowLeft className="w-5 h-5" />
-      </button>
+    <div className="flex flex-col min-h-screen bg-warm-white relative overflow-hidden">
+      {/* Background Ambience */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-navy/[0.02] rounded-full blur-[120px] -mr-40 -mt-40 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gold/[0.03] rounded-full blur-[100px] -ml-20 -mb-20 pointer-events-none" />
 
-      <div className="flex-1 max-w-md mx-auto w-full">
-        <AnimatePresence mode="wait">
-          {step === 'details' ? (
-            <motion.div
-              key="details"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
-            >
-              <div>
-                <Logo className="mb-8" />
-                <h1 className="text-3xl font-display font-bold text-navy mb-2">Create Account</h1>
-                <p className="text-navy/60">Join Coolzo for premium AC services.</p>
-              </div>
+      {/* Enrollment Header */}
+      <div className="bg-navy px-8 pt-16 pb-24 text-warm-white rounded-b-[72px] relative overflow-hidden shadow-2xl shadow-navy/40">
+        <button 
+          onClick={() => step === 'otp' ? setStep('details') : navigate(-1)}
+          className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-16 active:scale-95 transition-all shadow-2xl"
+        >
+          <ArrowLeft className="w-6 h-6" />
+        </button>
+        <div className="space-y-4 relative z-10">
+          <div className="flex items-center gap-4">
+            <Logo className="h-10 text-gold" />
+            <div className="h-8 w-px bg-white/10" />
+            <span className="text-[10px] font-bold text-white/30 uppercase tracking-[0.4em]">Node Registry 1.0</span>
+          </div>
+          <h1 className="text-[44px] font-display font-bold text-warm-white tracking-tighter leading-none italic">Patron <span className="text-gold">Enrollment</span></h1>
+          <p className="text-warm-white/40 text-[11px] font-bold uppercase tracking-[0.3em] max-w-xs">{step === 'details' ? 'Initializing executive membership protocol for elite service access.' : 'Awaiting identity confirmation via secure channel transmission.'}</p>
+        </div>
+      </div>
 
-              <form onSubmit={handleSendOTP} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+      <div className="px-8 -mt-12 space-y-12 pb-40 relative z-20">
+        <div className="bg-white p-10 rounded-[56px] shadow-2xl shadow-black/[0.02] border border-navy/5">
+          <AnimatePresence mode="wait">
+            {step === 'details' ? (
+              <motion.form
+                key="details"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                onSubmit={handleSendOTP}
+                className="space-y-8"
+              >
+                <div className="space-y-4">
+                  <Label htmlFor="name" className="text-[11px] font-bold uppercase tracking-[0.5em] text-navy/20 ml-4">Full Identity</Label>
                   <Input 
                     id="name" 
-                    placeholder="John Doe" 
-                    className="h-14 rounded-xl border-navy/10 focus:border-gold focus:ring-gold"
+                    placeholder="Full Name Registry" 
+                    className="h-20 px-8 rounded-[32px] border-navy/5 bg-navy/[0.02] focus:bg-white focus:ring-2 focus:ring-gold/30 text-[17px] font-bold text-navy shadow-inner focus:shadow-2xl transition-all"
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Mobile Number</Label>
+                <div className="space-y-4">
+                  <Label htmlFor="phone" className="text-[11px] font-bold uppercase tracking-[0.5em] text-navy/20 ml-4">Response Telemetry</Label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-navy/40 font-medium">+91</span>
+                    <span className="absolute left-8 top-1/2 -translate-y-1/2 text-[15px] font-bold text-navy/20">+91</span>
                     <Input 
                       id="phone" 
                       type="tel" 
                       placeholder="98765 43210" 
-                      className="pl-14 h-14 rounded-xl border-navy/10 focus:border-gold focus:ring-gold"
+                      className="pl-20 h-20 rounded-[32px] border-navy/5 bg-navy/[0.02] focus:bg-white focus:ring-2 focus:ring-gold/30 text-[17px] font-bold text-navy shadow-inner focus:shadow-2xl transition-all"
                       required
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                <div className="space-y-4">
+                  <Label htmlFor="email" className="text-[11px] font-bold uppercase tracking-[0.5em] text-navy/20 ml-4">Digital Signal</Label>
                   <Input 
                     id="email" 
                     type="email" 
-                    placeholder="name@example.com" 
-                    className="h-14 rounded-xl border-navy/10 focus:border-gold focus:ring-gold"
+                    placeholder="name@executive.com" 
+                    className="h-20 px-8 rounded-[32px] border-navy/5 bg-navy/[0.02] focus:bg-white focus:ring-2 focus:ring-gold/30 text-[17px] font-bold text-navy shadow-inner focus:shadow-2xl transition-all"
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                <div className="space-y-4">
+                  <Label htmlFor="password" className="text-[11px] font-bold uppercase tracking-[0.5em] text-navy/20 ml-4">Access Key</Label>
                   <Input 
                     id="password" 
                     type="password" 
                     placeholder="••••••••" 
-                    className="h-14 rounded-xl border-navy/10 focus:border-gold focus:ring-gold"
+                    className="h-20 px-8 rounded-[32px] border-navy/5 bg-navy/[0.02] focus:bg-white focus:ring-2 focus:ring-gold/30 text-[17px] font-bold text-navy shadow-inner focus:shadow-2xl transition-all"
                     required
                   />
                 </div>
                 
-                <div className="pt-4">
+                <div className="pt-6">
                   <Button 
                     type="submit" 
                     disabled={isLoading}
-                    className="w-full h-14 rounded-xl bg-navy text-warm-white hover:bg-navy/90 font-bold"
+                    className="w-full h-20 rounded-[32px] bg-navy text-gold hover:bg-navy/95 font-bold text-[18px] uppercase tracking-[0.3em] shadow-2xl shadow-navy/40 active:scale-95 transition-all group overflow-hidden relative"
                   >
-                    {isLoading ? 'Sending OTP...' : 'Send OTP'}
+                    <span className="relative z-10">{isLoading ? 'Initializing...' : 'Initialize Registry'}</span>
+                    <div className="absolute inset-x-0 bottom-0 h-1 bg-gold scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
                   </Button>
                 </div>
-              </form>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="otp"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-8 text-center"
-            >
-              <div>
-                <h1 className="text-3xl font-display font-bold text-navy mb-2">Verify Phone</h1>
-                <p className="text-navy/60">Enter the 6-digit code sent to your phone.</p>
-              </div>
+              </motion.form>
+            ) : (
+              <motion.div
+                key="otp"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="space-y-12 text-center py-4"
+              >
+                <div className="space-y-2">
+                  <p className="text-[11px] font-bold text-navy/20 uppercase tracking-[0.4em]">Signal Verification</p>
+                  <h2 className="text-[28px] font-display font-bold text-navy italic">Input <span className="text-gold">Cipher</span></h2>
+                </div>
 
-              <div className="flex justify-center">
-                <InputOTP 
-                  maxLength={6} 
-                  value={otpValue}
-                  onChange={handleVerifyOTP}
-                  disabled={isLoading}
-                >
-                  <InputOTPGroup className="gap-2">
-                    {[0, 1, 2, 3, 4, 5].map((i) => (
-                      <InputOTPSlot 
-                        key={i} 
-                        index={i} 
-                        className="w-12 h-14 rounded-xl border-navy/10 text-xl font-bold focus:border-gold focus:ring-gold"
-                      />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
+                <div className="flex justify-center">
+                  <InputOTP 
+                    maxLength={6} 
+                    value={otpValue}
+                    onChange={handleVerifyOTP}
+                    disabled={isLoading}
+                  >
+                    <InputOTPGroup className="gap-4">
+                      {[0, 1, 2, 3, 4, 5].map((i) => (
+                        <InputOTPSlot 
+                          key={i} 
+                          index={i} 
+                          className="w-12 h-16 rounded-[20px] bg-navy/[0.02] border-navy/5 text-2xl font-bold text-navy focus:border-gold focus:ring-2 focus:ring-gold/30 shadow-inner"
+                        />
+                      ))}
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
 
-              <div className="space-y-4">
-                <p className="text-sm text-navy/40">
-                  Didn't receive the code?{' '}
-                  <button className="text-gold font-bold hover:underline">Resend in 30s</button>
-                </p>
-                
-                {isLoading && (
-                  <div className="flex items-center justify-center gap-2 text-navy/60">
-                    <div className="w-4 h-4 border-2 border-gold border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm font-medium">Verifying...</span>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <div className="space-y-6">
+                  <p className="text-[12px] text-navy/40 font-bold uppercase tracking-[0.2em]">
+                    Signal Lost?{' '}
+                    <button className="text-gold font-bold hover:underline">Resend Cipher (30s)</button>
+                  </p>
+                  
+                  {isLoading && (
+                    <div className="flex items-center justify-center gap-4 text-navy/60 bg-navy/5 p-4 rounded-full">
+                      <div className="w-5 h-5 border-2 border-gold border-t-transparent rounded-full animate-spin" />
+                      <span className="text-[11px] font-bold uppercase tracking-widest">Validating Registry...</span>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
-        <div className="mt-12 text-center">
-          <p className="text-sm text-navy/60">
-            Already have an account?{' '}
+        <div className="text-center">
+          <p className="text-[12px] text-navy/40 font-bold uppercase tracking-widest">
+            Registered Node?{' '}
             <button 
               onClick={() => navigate('/login')}
-              className="text-gold font-bold hover:underline"
+              className="text-gold font-bold hover:underline ml-2"
             >
-              Log In
+              Authorize Access
             </button>
           </p>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default Register;

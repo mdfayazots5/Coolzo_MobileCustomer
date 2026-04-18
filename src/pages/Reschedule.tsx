@@ -80,60 +80,60 @@ const Reschedule = () => {
             onClick={() => navigate(-1)}
             className="w-10 h-10 rounded-full bg-navy/5 flex items-center justify-center text-navy"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-xl font-display font-bold text-navy">Reschedule</h1>
+          <h1 className="text-[20px] font-display font-bold text-navy">Reschedule</h1>
         </div>
       </div>
 
-      <div className="p-6 space-y-8 pb-32">
+      <div className="p-6 space-y-6 pb-32">
         {/* Info Banner */}
-        <div className="bg-gold/10 border border-gold/20 rounded-[32px] p-6 flex gap-4">
-          <AlertCircle className="w-6 h-6 text-gold shrink-0" />
-          <p className="text-xs text-navy/60 leading-relaxed font-medium">
-            Rescheduling is free up to 24 hours before the service. Changes made within 24 hours may incur a small fee.
+        <div className="bg-gold/10 border border-gold/20 rounded-xl p-5 flex gap-4">
+          <AlertCircle className="w-5 h-5 text-gold shrink-0" />
+          <p className="text-[11px] text-navy/60 leading-relaxed font-bold uppercase tracking-widest">
+            Rescheduling is free up to 24 hours before service. Changes within 24 hours may incur a small fee.
           </p>
         </div>
 
         {/* Date Selection */}
-        <div className="space-y-4">
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-text-secondary ml-1">Select New Date</h3>
+        <div className="space-y-3">
+          <h3 className="text-[10px] font-bold uppercase tracking-widest text-navy/40 ml-1">Select New Date</h3>
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
             {dates.map((d) => (
               <button
                 key={d.full}
                 onClick={() => setSelectedDate(d.full)}
                 className={cn(
-                  "flex flex-col items-center justify-center min-w-[72px] h-24 rounded-[24px] border transition-all",
+                  "flex flex-col items-center justify-center min-w-[72px] h-20 rounded-xl border transition-all",
                   selectedDate === d.full 
                     ? "bg-navy border-navy text-gold shadow-lg shadow-navy/20" 
                     : "bg-white border-border text-navy/40"
                 )}
               >
-                <span className="text-[10px] font-bold uppercase tracking-widest mb-1">{d.day}</span>
-                <span className="text-xl font-display font-bold">{d.date}</span>
+                <span className="text-[9px] font-bold uppercase tracking-widest mb-1">{d.day}</span>
+                <span className="text-[18px] font-display font-bold">{d.date}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Time Selection */}
-        <div className="space-y-4">
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-text-secondary ml-1">Select New Time</h3>
-          <div className="space-y-3">
+        <div className="space-y-3">
+          <h3 className="text-[10px] font-bold uppercase tracking-widest text-navy/40 ml-1">Select New Time</h3>
+          <div className="space-y-2">
             {times.map((t) => (
               <button
                 key={t}
                 onClick={() => setSelectedTime(t)}
                 className={cn(
-                  "w-full p-5 rounded-2xl border flex items-center gap-4 transition-all",
+                  "w-full p-4 rounded-xl border flex items-center gap-4 transition-all",
                   selectedTime === t 
                     ? "bg-gold/10 border-gold text-gold" 
                     : "bg-white border-border text-navy/40"
                 )}
               >
-                <Clock className="w-5 h-5" />
-                <span className="text-sm font-bold">{t}</span>
+                <Clock className="w-4 h-4" />
+                <span className="text-[14px] font-bold uppercase tracking-widest">{t}</span>
               </button>
             ))}
           </div>
@@ -145,9 +145,9 @@ const Reschedule = () => {
             <Button 
               onClick={handleReschedule}
               disabled={isSubmitting}
-              className="w-full h-16 rounded-[24px] bg-navy text-gold font-bold text-lg shadow-card"
+              className="w-full h-14 rounded-lg bg-navy text-gold font-bold text-[16px] shadow-card"
             >
-              {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Confirm New Schedule'}
+              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm Reschedule'}
             </Button>
           </div>
         </div>

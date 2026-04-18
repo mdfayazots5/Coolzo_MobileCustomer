@@ -11,10 +11,12 @@ import {
   ChevronRight,
   Lock,
   Trash2,
-  CheckCircle2
+  CheckCircle2,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 
@@ -40,124 +42,163 @@ const Profile = () => {
       await AuthService.updateProfile(user.uid, updatedData);
       
       setUser({ ...user, ...updatedData });
-      toast.success('Profile updated successfully');
+      toast.success('Identity synchronized successfully');
     } catch (error) {
       console.error('Profile update failed:', error);
-      toast.error('Failed to update profile');
+      toast.error('Identity synchronization sequence failed');
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-warm-white">
-      {/* Header */}
-      <div className="bg-white px-6 pt-12 pb-6 border-b border-navy/5 sticky top-0 z-30">
-        <div className="flex items-center gap-4">
+    <div className="flex flex-col min-h-screen bg-warm-white pb-64 relative overflow-hidden italic">
+      {/* Identity Ambience */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-navy/[0.02] rounded-full blur-[160px] -mr-40 -mt-20 pointer-events-none" />
+      <div className="absolute bottom-40 left-0 w-[500px] h-[500px] bg-gold/[0.03] rounded-full blur-[140px] -ml-40 pointer-events-none" />
+
+      {/* Protocol Header */}
+      <div className="bg-navy px-8 pt-20 pb-40 text-warm-white rounded-b-[84px] relative overflow-hidden shadow-3xl shadow-navy/60 z-20">
+        <div className="flex items-center gap-8 relative z-10 transition-all">
           <button 
             onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-full bg-navy/5 flex items-center justify-center text-navy"
+            className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition-all shadow-3xl border border-white/5"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-8 h-8" />
           </button>
-          <h1 className="text-xl font-display font-bold text-navy">My Profile</h1>
+          <div className="space-y-2">
+            <h1 className="text-[32px] font-display font-bold text-gold tracking-tighter leading-none uppercase">Identity Protocol</h1>
+            <p className="text-warm-white/30 text-[11px] font-bold uppercase tracking-[0.5em] leading-none">Executive Account Node</p>
+          </div>
         </div>
+        
+        <div className="absolute -right-40 -top-40 w-[600px] h-[600px] bg-gold/5 rounded-full blur-[160px] pointer-events-none" />
+        <User className="absolute -left-20 -bottom-20 w-[420px] h-[420px] text-warm-white/[0.02] -rotate-12 pointer-events-none" />
       </div>
 
-      <div className="p-6 space-y-8 pb-20">
-        {/* Avatar Section */}
-        <div className="flex flex-col items-center py-4">
+      <div className="px-8 -mt-24 space-y-20 relative z-30 pb-40">
+        {/* Avatar Telemetry */}
+        <div className="flex flex-col items-center py-10 group">
           <div className="relative">
-            <div className="w-32 h-32 rounded-[40px] bg-gold/10 border-4 border-white shadow-xl overflow-hidden">
-              <img src={`https://i.pravatar.cc/300?u=${user?.email}`} alt="Avatar" className="w-full h-full object-cover" />
+            <div className="w-48 h-48 rounded-[72px] bg-white border-2 border-gold/30 p-2 shadow-3xl shadow-gold/20 overflow-hidden transform group-hover:scale-105 transition-all duration-1000 group-hover:rotate-2 relative z-10">
+              <div className="w-full h-full rounded-[64px] overflow-hidden border-2 border-navy relative">
+                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`} alt="Avatar" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-navy/5" />
+              </div>
             </div>
-            <button className="absolute -bottom-2 -right-2 w-10 h-10 rounded-2xl bg-navy text-gold flex items-center justify-center shadow-lg border-2 border-white">
-              <ImageIcon className="w-5 h-5" />
+            <button className="absolute -bottom-4 -right-4 w-18 h-18 rounded-[28px] bg-navy text-gold flex items-center justify-center shadow-3xl border-[6px] border-warm-white active:scale-90 transition-all hover:bg-gold hover:text-navy active:rotate-90 z-20">
+              <ImageIcon className="w-8 h-8" />
             </button>
+            <div className="absolute inset-0 bg-gold/20 rounded-[72px] blur-2xl group-hover:blur-3xl transition-all duration-700 -z-10 opacity-0 group-hover:opacity-100" />
           </div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mt-6">Member ID: CZ-88291</p>
+          <div className="mt-12 text-center space-y-4">
+            <h2 className="text-[40px] font-display font-bold text-navy tracking-tighter leading-none uppercase truncate max-w-[320px]">{name || 'Patron Affiliate'}</h2>
+            <div className="flex items-center justify-center gap-4">
+              <Badge className="bg-gold/10 text-gold border border-gold/10 font-bold text-[10px] uppercase tracking-[0.4em] px-8 py-2.5 rounded-full shadow-3xl shadow-gold/10">CZ-UNIT-8829</Badge>
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-navy/20 text-[10px] font-bold uppercase tracking-[0.5em]">Elite Level Active</span>
+            </div>
+          </div>
         </div>
 
-        {/* Form Fields */}
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-navy/40 ml-1">Full Name</label>
-            <div className="relative">
-              <User className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-navy/20" />
+        {/* Configuration Matrix */}
+        <section className="space-y-12">
+          <div className="space-y-6">
+            <label className="text-[12px] font-bold uppercase tracking-[0.6em] text-navy/20 ml-8">Patron Identifier</label>
+            <div className="relative group">
+              <User className="absolute left-10 top-1/2 -translate-y-1/2 w-6 h-6 text-navy/10 group-focus-within:text-gold transition-all duration-700" />
               <input 
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full h-14 pl-14 pr-5 bg-white border border-navy/5 rounded-2xl text-sm font-bold text-navy focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all"
+                placeholder="Full Name Registry"
+                className="w-full h-24 pl-24 pr-10 bg-white border border-navy/5 rounded-[48px] text-[20px] font-display font-bold text-navy focus:outline-none focus:ring-4 focus:ring-gold/10 transition-all shadow-3xl shadow-black/[0.01] focus:shadow-gold/20 focus:border-gold/30 placeholder:text-navy/5 uppercase tracking-tight"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-navy/40 ml-1">Email Address</label>
-            <div className="relative">
-              <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-navy/20" />
+          <div className="space-y-6">
+            <label className="text-[12px] font-bold uppercase tracking-[0.6em] text-navy/20 ml-8">Secure Channel</label>
+            <div className="relative group opacity-40 grayscale">
+              <Mail className="absolute left-10 top-1/2 -translate-y-1/2 w-6 h-6 text-navy/10" />
               <input 
                 type="email"
+                disabled
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-14 pl-14 pr-5 bg-white border border-navy/5 rounded-2xl text-sm font-bold text-navy focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all"
+                className="w-full h-24 pl-24 pr-10 bg-navy/[0.02] border border-navy/5 rounded-[48px] text-[20px] font-display font-bold text-navy focus:outline-none transition-all shadow-inner uppercase tracking-tight"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-navy/40 ml-1">Phone Number</label>
-            <div className="relative">
-              <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-navy/20" />
+          <div className="space-y-6">
+            <label className="text-[12px] font-bold uppercase tracking-[0.6em] text-navy/20 ml-8">Response Telemetry</label>
+            <div className="relative group">
+              <Phone className="absolute left-10 top-1/2 -translate-y-1/2 w-6 h-6 text-navy/10 group-focus-within:text-gold transition-all duration-700" />
               <input 
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full h-14 pl-14 pr-5 bg-white border border-navy/5 rounded-2xl text-sm font-bold text-navy focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all"
+                placeholder="Secure Line Registry"
+                className="w-full h-24 pl-24 pr-10 bg-white border border-navy/5 rounded-[48px] text-[20px] font-display font-bold text-navy focus:outline-none focus:ring-4 focus:ring-gold/10 transition-all shadow-3xl shadow-black/[0.01] focus:shadow-gold/20 focus:border-gold/30 placeholder:text-navy/5 uppercase tracking-tight"
               />
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Action Links */}
-        <div className="space-y-3 pt-4">
+        {/* Protocol Directives */}
+        <section className="space-y-10 pt-10">
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-navy/5 to-transparent mb-16" />
+          
           <button 
             onClick={() => navigate('/app/change-password')}
-            className="w-full flex items-center justify-between p-5 bg-white rounded-2xl border border-navy/5 group active:scale-[0.98] transition-all"
+            className="w-full flex items-center justify-between p-12 bg-white rounded-[72px] border border-navy/5 group active:scale-[0.98] transition-all hover:bg-gold/[0.02] hover:border-gold/30 shadow-3xl shadow-black/[0.01] hover:shadow-3xl"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-navy/5 flex items-center justify-center text-navy/40 group-hover:text-gold transition-colors">
-                <Lock className="w-5 h-5" />
+            <div className="flex items-center gap-10">
+              <div className="w-18 h-18 rounded-[32px] bg-navy/[0.03] flex items-center justify-center text-navy/10 group-hover:bg-navy group-hover:text-gold transition-all duration-700 shadow-inner group-hover:rotate-6 border border-navy/5">
+                <Lock className="w-8 h-8" />
               </div>
-              <span className="font-bold text-navy text-sm">Change Password</span>
+              <div className="text-left space-y-2">
+                <span className="font-display font-bold text-navy text-[24px] tracking-tighter uppercase group-hover:text-gold transition-colors">Access Credentials</span>
+                <p className="text-[11px] font-bold text-navy/30 uppercase tracking-[0.4em]">Master Security Key Rotation</p>
+              </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-navy/20" />
+            <div className="w-14 h-14 rounded-full bg-navy/[0.02] flex items-center justify-center text-navy/10 group-hover:bg-gold group-hover:text-navy transition-all duration-700 shadow-sm border border-navy/5 group-hover:rotate-45">
+              <ChevronRight className="w-8 h-8" />
+            </div>
           </button>
 
           <button 
             onClick={() => navigate('/app/delete-account')}
-            className="w-full flex items-center justify-between p-5 bg-white rounded-2xl border border-navy/5 group active:scale-[0.98] transition-all"
+            className="w-full flex items-center justify-between p-12 bg-white rounded-[72px] border border-navy/5 group active:scale-[0.98] transition-all hover:bg-red-500/[0.02] hover:border-red-500/30 shadow-3xl shadow-black/[0.01] hover:shadow-3xl"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-400">
-                <Trash2 className="w-5 h-5" />
+            <div className="flex items-center gap-10">
+              <div className="w-18 h-18 rounded-[32px] bg-red-500/5 flex items-center justify-center text-red-500/10 group-hover:bg-red-500 group-hover:text-white transition-all duration-700 shadow-inner border border-red-500/5">
+                <Trash2 className="w-8 h-8" />
               </div>
-              <span className="font-bold text-navy text-sm">Delete Account</span>
+              <div className="text-left space-y-2">
+                <span className="font-display font-bold text-navy text-[24px] tracking-tighter uppercase group-hover:text-red-500 transition-colors">Node Deletion</span>
+                <p className="text-[11px] font-bold text-navy/30 uppercase tracking-[0.4em]">Permanent Termination Sequence</p>
+              </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-navy/20" />
+            <div className="w-14 h-14 rounded-full bg-navy/[0.02] flex items-center justify-center text-navy/10 group-hover:bg-red-500 group-hover:text-white transition-all duration-700 shadow-sm border border-navy/5 group-hover:-rotate-45">
+              <ChevronRight className="w-8 h-8" />
+            </div>
           </button>
-        </div>
+        </section>
 
-        {/* Save Button */}
-        <div className="pt-6">
-          <Button 
-            onClick={handleSave}
-            disabled={isSaving}
-            className="w-full h-16 rounded-[24px] bg-gold text-navy font-bold text-lg shadow-xl shadow-gold/20 disabled:opacity-50"
-          >
-            {isSaving ? 'Saving Changes...' : 'Save Changes'}
-          </Button>
+        {/* Persistence Module */}
+        <div className="fixed bottom-0 left-0 right-0 p-12 bg-white/95 backdrop-blur-3xl border-t border-navy/5 z-50 rounded-t-[84px] shadow-[0_-30px_90px_-20px_rgba(0,0,0,0.15)] border-t border-white shadow-inner">
+          <div className="max-w-[540px] mx-auto">
+            <Button 
+              onClick={handleSave}
+              disabled={isSaving}
+              className="w-full h-24 rounded-[42px] bg-navy text-gold font-bold text-[20px] uppercase tracking-[0.4em] shadow-3xl shadow-navy/60 active:scale-95 transition-all hover:bg-navy/95 group relative overflow-hidden active:shadow-inner"
+            >
+              <span className="relative z-10">{isSaving ? <Loader2 className="w-10 h-10 animate-spin" /> : 'Commit Identity Sync'}</span>
+              <div className="absolute inset-0 bg-gold/5 -translate-x-full group-hover:translate-x-0 transition-transform duration-1000 ease-out" />
+              <div className="absolute inset-x-0 bottom-0 h-1.5 bg-gold scale-x-0 group-hover:scale-x-100 transition-transform duration-1000 origin-left" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>

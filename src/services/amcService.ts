@@ -12,6 +12,7 @@ export interface AMCPlan {
   features: string[];
   category: string;
   image: string;
+  recommended?: boolean;
 }
 
 export interface AMCSubscription {
@@ -52,7 +53,8 @@ export class AMCService {
           description: 'Comprehensive protection for total peace of mind.',
           features: ['3 Preventive Maintenances', 'Unlimited Breakdown Calls', 'Free Spare Parts (Selected)', 'Priority Support'],
           category: 'Residential',
-          image: 'https://picsum.photos/seed/amc2/800/600'
+          image: 'https://picsum.photos/seed/amc2/800/600',
+          recommended: true
         }
       ];
     }

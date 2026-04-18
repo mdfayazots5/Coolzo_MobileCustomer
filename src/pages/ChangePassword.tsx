@@ -54,14 +54,15 @@ const ChangePassword = () => {
         <div className="space-y-2">
           <label className="text-[10px] font-bold uppercase tracking-widest text-navy/40 ml-1">Current Password</label>
           <div className="relative">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-navy/20" />
             <input 
               type={showCurrent ? 'text' : 'password'}
               value={passwords.current}
               onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-              className="w-full h-14 px-5 bg-white border border-navy/5 rounded-2xl text-sm font-bold text-navy focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all"
+              className="w-full h-12 pl-12 pr-12 bg-white border border-navy/5 rounded-lg text-[14px] font-bold text-navy focus:outline-none focus:ring-1 focus:ring-gold transition-all"
             />
-            <button type="button" onClick={() => setShowCurrent(!showCurrent)} className="absolute right-5 top-1/2 -translate-y-1/2 text-navy/20">
-              {showCurrent ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            <button type="button" onClick={() => setShowCurrent(!showCurrent)} className="absolute right-4 top-1/2 -translate-y-1/2 text-navy/20 active:scale-90 transition-transform">
+              {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
         </div>
@@ -69,31 +70,37 @@ const ChangePassword = () => {
         <div className="space-y-2">
           <label className="text-[10px] font-bold uppercase tracking-widest text-navy/40 ml-1">New Password</label>
           <div className="relative">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-navy/20" />
             <input 
               type={showNew ? 'text' : 'password'}
               value={passwords.new}
               onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-              className="w-full h-14 px-5 bg-white border border-navy/5 rounded-2xl text-sm font-bold text-navy focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all"
+              className="w-full h-12 pl-12 pr-12 bg-white border border-navy/5 rounded-lg text-[14px] font-bold text-navy focus:outline-none focus:ring-1 focus:ring-gold transition-all"
             />
-            <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-5 top-1/2 -translate-y-1/2 text-navy/20">
-              {showNew ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            <button type="button" onClick={() => setShowNew(!showNew)} className="absolute right-4 top-1/2 -translate-y-1/2 text-navy/20 active:scale-90 transition-transform">
+              {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
         </div>
 
         <div className="space-y-2">
           <label className="text-[10px] font-bold uppercase tracking-widest text-navy/40 ml-1">Confirm New Password</label>
-          <input 
-            type={showNew ? 'text' : 'password'}
-            value={passwords.confirm}
-            onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-            className="w-full h-14 px-5 bg-white border border-navy/5 rounded-2xl text-sm font-bold text-navy focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all"
-          />
+          <div className="relative">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-navy/20" />
+            <input 
+              type={showNew ? 'text' : 'password'}
+              value={passwords.confirm}
+              onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+              className="w-full h-12 pl-12 pr-5 bg-white border border-navy/5 rounded-lg text-[14px] font-bold text-navy focus:outline-none focus:ring-1 focus:ring-gold transition-all"
+            />
+          </div>
         </div>
 
-        <Button type="submit" disabled={isSaving} className="w-full h-16 rounded-[24px] bg-gold text-navy font-bold text-lg shadow-xl shadow-gold/20 mt-10">
-          {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Update Password'}
-        </Button>
+        <div className="pt-6">
+          <Button type="submit" disabled={isSaving} className="w-full h-14 rounded-lg bg-navy text-gold font-bold text-[16px] shadow-card">
+            {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Update Password'}
+          </Button>
+        </div>
       </form>
     </div>
   );

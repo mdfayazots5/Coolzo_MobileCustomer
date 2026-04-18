@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { EquipmentService, Equipment } from '@/services/equipmentService';
 import { useAuthStore } from '@/store/useAuthStore';
+import { motion } from 'motion/react';
 
 const AddEditEquipment = () => {
   const { id } = useParams();
@@ -43,135 +44,157 @@ const AddEditEquipment = () => {
   const handleSave = async () => {
     if (!user) return;
     if (!formData.name || !formData.brand) {
-      toast.error('Please fill in all required fields');
+      toast.error('Identification gap detected. Complete all required fields.');
       return;
     }
     
     try {
       await EquipmentService.saveEquipment(user.uid, formData);
-      toast.success(isEdit ? 'Equipment updated' : 'Equipment added to your register');
+      toast.success(isEdit ? 'Hardware re-aligned in registry' : 'New artifact logged successfully');
       navigate(-1);
     } catch (error) {
-      toast.error('Failed to save equipment');
+      toast.error('Hardware registry failure');
     }
   };
 
   if (isLoading) {
     return (
-      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
-        <Loader2 className="w-10 h-10 text-gold animate-spin" />
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center italic">
+        <Loader2 className="w-16 h-16 text-gold animate-spin" />
+        <p className="mt-8 text-[11px] font-bold uppercase tracking-[0.5em] text-navy/20 animate-pulse">Scanning Blueprint...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-warm-white">
-      {/* Header */}
-      <div className="bg-white px-6 pt-12 pb-6 border-b border-border sticky top-0 z-30">
-        <div className="flex items-center gap-4">
+    <div className="flex flex-col min-h-screen bg-warm-white pb-64 relative overflow-hidden italic">
+      {/* Hardware Ambience */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-navy/[0.02] rounded-full blur-[160px] -mr-40 -mt-20 pointer-events-none" />
+      <div className="absolute bottom-40 left-0 w-[500px] h-[500px] bg-gold/[0.03] rounded-full blur-[140px] -ml-40 pointer-events-none" />
+
+      {/* Institutional Header */}
+      <div className="bg-navy px-8 pt-20 pb-40 text-warm-white rounded-b-[84px] relative overflow-hidden shadow-3xl shadow-navy/60 z-20">
+        <div className="flex items-center gap-8 relative z-10 transition-all">
           <button 
             onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-full bg-navy/5 flex items-center justify-center text-navy"
+            className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center text-white active:scale-95 transition-all shadow-3xl border border-white/5"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-8 h-8" />
           </button>
-          <h1 className="text-xl font-display font-bold text-navy">
-            {isEdit ? 'Edit Equipment' : 'Add New AC'}
-          </h1>
+          <div className="space-y-2">
+            <h1 className="text-[32px] font-display font-bold text-gold tracking-tighter leading-none uppercase">
+              {isEdit ? 'Asset Override' : 'New Registry'}
+            </h1>
+            <p className="text-warm-white/30 text-[11px] font-bold uppercase tracking-[0.5em] leading-none">Hardware Identification Registry</p>
+          </div>
         </div>
+        
+        <div className="absolute -right-40 -top-40 w-[600px] h-[600px] bg-gold/5 rounded-full blur-[160px] pointer-events-none" />
+        <Wind className="absolute -left-20 -bottom-20 w-[420px] h-[420px] text-warm-white/[0.02] -rotate-12 pointer-events-none" />
       </div>
 
-      <div className="p-6 space-y-8 pb-32">
-        {/* Photo Upload */}
-        <div className="flex flex-col items-center justify-center py-10 bg-white rounded-[40px] border border-dashed border-navy/10">
-          <div className="w-20 h-20 rounded-[32px] bg-navy/5 flex items-center justify-center text-navy/20 mb-4">
-            <ImageIcon className="w-8 h-8" />
+      <div className="px-8 -mt-24 space-y-16 pb-64 relative z-30">
+        {/* Visual Spec Matrix */}
+        <div className="bg-white rounded-[72px] p-12 flex flex-col items-center justify-center border border-navy/5 relative overflow-hidden group shadow-3xl shadow-black/[0.01] hover:border-gold/30 transition-all cursor-pointer bg-gradient-to-b from-white to-navy/[0.01]">
+          <div className="w-24 h-24 rounded-[36px] bg-navy/[0.03] flex items-center justify-center text-navy/10 mb-8 shadow-inner group-hover:bg-navy group-hover:text-gold transition-all duration-700 group-hover:rotate-12 border border-navy/5">
+            <ImageIcon className="w-10 h-10" />
           </div>
-          <p className="text-xs font-bold text-navy/40 uppercase tracking-widest">Upload AC Photo</p>
-          <p className="text-[10px] text-navy/20 mt-1">Help technicians identify the unit</p>
+          <p className="text-[12px] font-bold text-navy/40 uppercase tracking-[0.4em] mb-4">Capture Visual Spec</p>
+          <p className="text-[10px] text-navy/20 font-bold uppercase tracking-[0.2em]">Helper Identification Protocol</p>
+          <div className="absolute inset-0 bg-gold/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
         </div>
 
-        {/* Form */}
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary ml-1">AC Nickname *</label>
+        {/* Configuration Dossier */}
+        <div className="space-y-12">
+          <div className="space-y-6">
+            <label className="text-[12px] font-bold uppercase tracking-[0.6em] text-navy/20 ml-8 italic">Artifact Designation *</label>
             <Input 
-              placeholder="e.g. Master Bedroom AC"
+              placeholder="e.g. Master Bedroom Core"
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
-              className="h-14 rounded-2xl border-border bg-white px-5 font-medium"
+              className="h-24 rounded-[48px] border-navy/5 bg-white px-10 font-display font-bold text-[20px] focus-visible:ring-gold/30 transition-all shadow-3xl shadow-black/[0.01] uppercase tracking-tighter"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary ml-1">Brand *</label>
+          <div className="grid grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <label className="text-[12px] font-bold uppercase tracking-[0.6em] text-navy/20 ml-8 italic">Brand Trace *</label>
               <Input 
-                placeholder="e.g. Daikin"
+                placeholder="e.g. Daikin Protocol"
                 value={formData.brand}
                 onChange={(e) => setFormData({...formData, brand: e.target.value})}
-                className="h-14 rounded-2xl border-border bg-white px-5 font-medium"
+                className="h-24 rounded-[48px] border-navy/5 bg-white px-10 font-display font-bold text-[20px] focus-visible:ring-gold/30 transition-all shadow-3xl shadow-black/[0.01] uppercase tracking-tighter"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary ml-1">Type</label>
-              <select 
-                value={formData.type}
-                onChange={(e) => setFormData({...formData, type: e.target.value})}
-                className="w-full h-14 rounded-2xl border border-border bg-white px-5 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-gold/50"
-              >
-                <option>Split</option>
-                <option>Window</option>
-                <option>Cassette</option>
-                <option>Tower</option>
-              </select>
+            <div className="space-y-6">
+              <label className="text-[12px] font-bold uppercase tracking-[0.6em] text-navy/20 ml-8 italic">Architecture</label>
+              <div className="relative group">
+                <select 
+                  value={formData.type}
+                  onChange={(e) => setFormData({...formData, type: e.target.value})}
+                  className="w-full h-24 rounded-[48px] border border-navy/5 bg-white px-10 font-display font-bold text-[20px] focus:outline-none focus:ring-4 focus:ring-gold/10 appearance-none shadow-3xl shadow-black/[0.01] text-navy cursor-pointer uppercase tracking-tighter"
+                >
+                  <option>Split Node</option>
+                  <option>Window Matrix</option>
+                  <option>Cassette Core</option>
+                  <option>Tower Assembly</option>
+                </select>
+                <Wind className="absolute right-10 top-1/2 -translate-y-1/2 w-8 h-8 text-navy/10 pointer-events-none group-active:text-gold transition-colors" />
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary ml-1">Tonnage</label>
+          <div className="grid grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <label className="text-[12px] font-bold uppercase tracking-[0.6em] text-navy/20 ml-8 italic">Tonnage Capacity</label>
               <select 
                 value={formData.capacity}
                 onChange={(e) => setFormData({...formData, capacity: e.target.value})}
-                className="w-full h-14 rounded-2xl border border-border bg-white px-5 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-gold/50"
+                className="w-full h-24 rounded-[48px] border border-navy/5 bg-white px-10 font-display font-bold text-[20px] focus:outline-none focus:ring-4 focus:ring-gold/10 appearance-none shadow-3xl shadow-black/[0.01] text-navy cursor-pointer uppercase tracking-tighter"
               >
-                <option>1.0 Ton</option>
-                <option>1.5 Ton</option>
-                <option>2.0 Ton</option>
-                <option>3.0 Ton+</option>
+                <option>1.0 Ton Payload</option>
+                <option>1.5 Ton Payload</option>
+                <option>2.0 Ton Payload</option>
+                <option>3.0 Ton+ Assembly</option>
               </select>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary ml-1">Room/Location</label>
+            <div className="space-y-6">
+              <label className="text-[12px] font-bold uppercase tracking-[0.6em] text-navy/20 ml-8 italic">Deployment Sector</label>
               <Input 
-                placeholder="e.g. Guest Room"
+                placeholder="e.g. Guest Wing Matrix"
                 value={formData.location}
                 onChange={(e) => setFormData({...formData, location: e.target.value})}
-                className="h-14 rounded-2xl border-border bg-white px-5 font-medium"
+                className="h-24 rounded-[48px] border-navy/5 bg-white px-10 font-display font-bold text-[20px] focus-visible:ring-gold/30 transition-all shadow-3xl shadow-black/[0.01] uppercase tracking-tighter"
               />
             </div>
           </div>
         </div>
 
-        {/* Info */}
-        <div className="bg-navy/5 rounded-3xl p-6 flex gap-4">
-          <Info className="w-5 h-5 text-navy/40 shrink-0" />
-          <p className="text-[10px] text-navy/60 leading-relaxed font-medium">
-            Adding your equipment helps us maintain a digital health record and send timely maintenance reminders.
-          </p>
-        </div>
-
-        {/* Footer */}
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-lg border-t border-border z-40">
-          <div className="max-w-md mx-auto">
-            <Button 
-              onClick={handleSave}
-              className="w-full h-16 rounded-[24px] bg-navy text-gold font-bold text-lg shadow-card"
-            >
-              {isEdit ? 'Save Changes' : 'Add to Register'}
-            </Button>
+        {/* Tactical Info */}
+        <div className="bg-navy rounded-[48px] p-10 flex gap-8 shadow-3xl shadow-navy/60 relative overflow-hidden group border border-white/5">
+          <div className="w-16 h-16 rounded-[22px] bg-white/10 flex items-center justify-center text-gold shrink-0 relative z-10 group-hover:bg-gold group-hover:text-navy transition-all duration-500 shadow-3xl">
+            <Info className="w-8 h-8" />
           </div>
+          <div className="space-y-2 relative z-10 transition-transform duration-700">
+             <p className="text-[11px] font-bold uppercase tracking-[0.4em] text-gold/40">Audit Protocol Agent</p>
+             <p className="text-[13px] text-warm-white/40 leading-relaxed font-bold uppercase tracking-[0.2em] group-hover:text-warm-white transition-colors">
+               Systemic records facilitate predictive maintenance and proactive intervention protocols within the operative grid.
+             </p>
+          </div>
+          <div className="absolute -right-16 -bottom-16 w-64 h-64 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
+        </div>
+      </div>
+
+      {/* Persistence Module */}
+      <div className="fixed bottom-0 left-0 right-0 p-12 bg-white/95 backdrop-blur-3xl border-t border-navy/5 z-50 rounded-t-[84px] shadow-[0_-30px_90px_-20px_rgba(0,0,0,0.15)] border-t border-white shadow-inner">
+        <div className="max-w-[540px] mx-auto">
+          <Button 
+            onClick={handleSave}
+            className="w-full h-24 rounded-[42px] bg-navy text-gold font-bold text-[20px] uppercase tracking-[0.4em] shadow-3xl shadow-navy/60 active:scale-95 transition-all hover:bg-navy/95 group relative overflow-hidden active:shadow-inner"
+          >
+            <span className="relative z-10">{isEdit ? 'Authorize Registry Sync' : 'Commit New Artifact'}</span>
+            <div className="absolute inset-y-0 left-0 w-2 bg-gold translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-1000" />
+          </Button>
         </div>
       </div>
     </div>

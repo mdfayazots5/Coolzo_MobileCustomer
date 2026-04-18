@@ -30,139 +30,152 @@ export default function BookingConfirmation() {
 
   const handleCopy = () => {
     navigator.clipboard.writeText(bookingRef);
-    toast.success("Booking reference copied!");
+    toast.success("Engagement reference copied to clipboard");
   };
 
   const handleShare = () => {
-    const text = `I just booked an AC service with Coolzo! My reference is ${bookingRef}.`;
+    const text = `Institutional deployment synchronized with Coolzo. Reference: ${bookingRef}. Experience the elite standard.`;
     if (navigator.share) {
-      navigator.share({ title: 'Coolzo Booking', text });
+      navigator.share({ title: 'Coolzo Deployment', text });
     } else {
       handleCopy();
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-warm-white">
-      <div className="flex-1 px-6 py-12 flex flex-col items-center text-center">
-        {/* Success Animation */}
+    <div className="flex flex-col min-h-screen bg-warm-white pb-32 relative overflow-hidden">
+      <div className="flex-1 px-8 py-24 flex flex-col items-center text-center relative z-10">
+        {/* Cinematic Success Signature */}
         <motion.div 
           initial={{ scale: 0, rotate: -45 }}
           animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: 'spring', damping: 12, stiffness: 200 }}
-          className="w-24 h-24 bg-gold rounded-[32px] flex items-center justify-center mb-8 shadow-2xl shadow-gold/40"
+          transition={{ type: 'spring', damping: 15, stiffness: 200 }}
+          className="w-40 h-40 bg-navy rounded-[48px] flex items-center justify-center mb-16 shadow-3xl shadow-navy/40 relative group"
         >
-          <Check className="w-12 h-12 text-navy stroke-[3]" />
+          <div className="absolute inset-0 bg-gold/20 rounded-[48px] animate-ping opacity-20" />
+          <div className="absolute inset-0 bg-gold/10 rounded-[48px] blur-3xl group-hover:bg-gold/20 transition-colors duration-1000" />
+          <Check className="w-20 h-20 text-gold stroke-[4] relative z-10" />
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
+          className="space-y-6 mb-20"
         >
-          <h1 className="text-3xl font-display font-bold text-navy mb-2">Booking Confirmed!</h1>
-          <p className="text-navy/60 text-sm mb-8">Your technician will be assigned shortly.</p>
+          <h1 className="text-[48px] font-display font-bold text-navy tracking-tighter leading-none italic">Deployment <span className="text-gold">Cleared.</span></h1>
+          <p className="text-navy/30 text-[12px] font-bold uppercase tracking-[0.4em] italic leading-tight">Tactical Synchronization Successful</p>
         </motion.div>
 
-        {/* Reference Card */}
+        {/* Reference Dossier Card */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4 }}
-          className="w-full bg-white rounded-[40px] p-8 border border-navy/5 shadow-sm mb-10"
+          className="w-full max-w-md bg-white rounded-[72px] p-12 border border-navy/5 shadow-2xl shadow-black/[0.01] mb-20 relative overflow-hidden group"
         >
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-navy/40 mb-3">Booking Reference</p>
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <span className="text-3xl font-mono font-bold text-navy tracking-tighter">{bookingRef}</span>
+          <div className="absolute top-0 inset-x-0 h-2 bg-navy/5 group-hover:bg-gold/20 transition-colors duration-1000" />
+          <p className="text-[11px] font-bold uppercase tracking-[0.5em] text-navy/20 mb-8 italic">Engagement Reference Dossier</p>
+          <div className="flex items-center justify-center gap-8 mb-16 relative z-10">
+            <span className="text-[44px] font-mono font-bold text-navy tracking-tighter italic">{bookingRef}</span>
             <button 
               onClick={handleCopy}
-              className="w-10 h-10 rounded-xl bg-navy/5 flex items-center justify-center text-navy/40 hover:text-navy transition-colors"
+              className="w-16 h-16 rounded-[24px] bg-navy/5 flex items-center justify-center text-navy/20 hover:text-navy hover:bg-navy/10 transition-all active:scale-90 shadow-inner group-hover:bg-gold/10 group-hover:text-gold"
             >
-              <Copy className="w-4 h-4" />
+              <Copy className="w-7 h-7" />
             </button>
           </div>
           
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-8 relative z-10">
             <Button 
               variant="outline" 
-              className="h-12 rounded-2xl border-navy/10 text-navy font-bold gap-2"
+              className="h-20 rounded-[28px] border-navy/10 text-navy/40 font-bold gap-4 uppercase tracking-[0.3em] text-[12px] bg-navy/5 hover:bg-navy/10 transition-all active:scale-95 italic shadow-sm"
               onClick={handleShare}
             >
-              <Share2 className="w-4 h-4" /> Share
+              <Share2 className="w-5 h-5" /> Share
             </Button>
             <Button 
-              className="h-12 rounded-2xl bg-navy text-gold font-bold gap-2"
+              className="h-20 rounded-[28px] bg-navy text-gold font-bold gap-4 uppercase tracking-[0.3em] text-[12px] shadow-3xl shadow-navy/40 hover:bg-navy/95 active:scale-95 transition-all italic"
               onClick={() => navigate('/app/jobs')}
             >
-              Track Job <ArrowRight className="w-4 h-4" />
+              Telemetry <ArrowRight className="w-5 h-5 text-gold" />
             </Button>
           </div>
+          <div className="absolute right-0 bottom-0 w-48 h-48 bg-gold/[0.01] rounded-tl-full pointer-events-none group-hover:bg-gold/5 transition-colors duration-1000" />
         </motion.div>
 
-        {/* Timeline */}
-        <div className="w-full space-y-8 px-4 mb-12">
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-navy/40 text-left">What Happens Next</h3>
-          <div className="space-y-6">
+        {/* Tactical Timeline */}
+        <div className="w-full max-w-md space-y-16 px-4 mb-24 text-left">
+          <div className="space-y-3">
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.5em] text-navy/20">Operational Roadmap</h3>
+            <h2 className="text-[32px] font-display font-bold text-navy tracking-tighter italic">Imminent Phases</h2>
+          </div>
+          <div className="space-y-12">
             {[
-              { icon: ShieldCheck, title: 'Technician Assignment', desc: 'We are matching the best expert for your AC brand.' },
-              { icon: MessageSquare, title: 'Confirmation Call', desc: 'Technician will call you to confirm the exact arrival time.' },
-              { icon: Calendar, title: 'Service Delivery', desc: 'Expert arrives at your doorstep with all necessary tools.' },
+              { icon: ShieldCheck, title: 'Expert Allocation', desc: 'Sourcing the optimal field operative authorized for your hardware.' },
+              { icon: MessageSquare, title: 'Vocal Authorization', desc: 'Operative will establish direct verbal communication to finalize the vector.' },
+              { icon: Calendar, title: 'Tactical Presence', desc: 'Professional deployment with standardized high-precision industrial kit.' },
             ].map((step, i) => (
-              <div key={i} className="flex gap-5 text-left relative">
-                {i < 2 && <div className="absolute left-6 top-12 bottom-0 w-0.5 bg-navy/5" />}
-                <div className="w-12 h-12 rounded-2xl bg-navy/5 flex items-center justify-center text-navy/20 shrink-0">
-                  <step.icon className="w-6 h-6" />
+              <div key={i} className="flex gap-10 relative group">
+                {i < 2 && <div className="absolute left-8.5 top-18 bottom-[-48px] w-px bg-navy/5 group-hover:bg-gold/30 transition-colors" />}
+                <div className="w-18 h-18 rounded-[28px] bg-navy/5 flex items-center justify-center text-navy/10 shrink-0 group-hover:bg-navy group-hover:text-gold transition-all duration-1000 shadow-inner">
+                  <step.icon className="w-8 h-8" />
                 </div>
-                <div>
-                  <h4 className="font-bold text-navy text-sm mb-1">{step.title}</h4>
-                  <p className="text-xs text-navy/40 leading-relaxed">{step.desc}</p>
+                <div className="pt-3">
+                  <h4 className="font-bold text-navy text-[19px] mb-2 tracking-tight group-hover:text-gold transition-colors italic leading-none">{step.title}</h4>
+                  <p className="text-[14px] text-navy/40 leading-relaxed font-bold italic uppercase tracking-tight opacity-70">"{step.desc}"</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Guest Registration Prompt */}
+        {/* Identity Synchronization Protocol */}
         {!isAuthenticated && (
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-            className="w-full bg-gold rounded-[40px] p-8 relative overflow-hidden text-left"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="w-full max-w-md bg-gold rounded-[72px] p-12 relative overflow-hidden text-left shadow-3xl shadow-gold/30 group active:scale-[0.99] transition-all"
           >
             <div className="relative z-10">
-              <div className="w-12 h-12 rounded-2xl bg-navy text-gold flex items-center justify-center mb-4">
-                <UserPlus className="w-6 h-6" />
+              <div className="w-20 h-20 rounded-[32px] bg-navy text-gold flex items-center justify-center mb-10 shadow-3xl shadow-navy/30 group-hover:rotate-6 transition-transform duration-1000">
+                <UserPlus className="w-10 h-10" />
               </div>
-              <h3 className="text-xl font-display font-bold text-navy mb-2">Save your details?</h3>
-              <p className="text-navy/60 text-xs font-bold mb-6 leading-relaxed">
-                Create an account to track this booking, save your address, and get 10% off your next service.
+              <h3 className="text-[36px] font-display font-bold text-navy mb-4 tracking-tighter leading-none italic">Preserve Protocol?</h3>
+              <p className="text-navy/60 text-[14px] font-bold mb-12 leading-relaxed opacity-80 uppercase tracking-[0.1em] italic">
+                Establish a permanent alias to synchronize future missions and secure grandfathered rate matrix.
               </p>
               <Button 
-                className="w-full h-14 rounded-2xl bg-navy text-gold font-bold"
+                className="w-full h-22 rounded-[32px] bg-navy text-gold font-bold text-[20px] uppercase tracking-[0.3em] shadow-3xl shadow-navy/40 hover:bg-navy/95 active:scale-95 transition-all italic"
                 onClick={() => navigate('/register', { state: { email: contact.email } })}
               >
-                Create Account
+                Establish Identity
               </Button>
               <button 
                 onClick={() => navigate('/app')}
-                className="w-full mt-4 text-[10px] font-bold uppercase tracking-widest text-navy/40 text-center"
+                className="w-full mt-10 text-[11px] font-bold uppercase tracking-[0.5em] text-navy/30 text-center hover:text-navy transition-colors italic"
               >
-                Maybe Later
+                Defer Identity Registry
               </button>
             </div>
-            <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-navy/5 rounded-full blur-3xl" />
+            <div className="absolute -right-24 -bottom-24 w-80 h-80 bg-navy/5 rounded-full blur-[100px]" />
+            <UserPlus className="absolute top-12 right-12 w-32 h-32 text-navy/5 -rotate-12 group-hover:rotate-0 transition-transform duration-[3000ms]" />
           </motion.div>
         )}
 
         <Button 
           variant="ghost" 
-          className="mt-8 text-navy/40 font-bold gap-2"
+          className="mt-20 text-navy/20 font-bold gap-6 text-[13px] uppercase tracking-[0.5em] hover:text-navy hover:bg-navy/5 transition-all px-12 h-16 rounded-full italic mx-auto"
           onClick={() => navigate('/app')}
         >
-          <Home className="w-4 h-4" /> Back to Home
+          <Home className="w-5 h-5 opacity-40" /> Return to Core
         </Button>
       </div>
+
+      {/* Atmospheric Ambience */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gold/5 rounded-full blur-[140px] -mr-40 -mt-40 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-navy/5 rounded-full blur-[120px] -ml-20 -mb-20 pointer-events-none" />
     </div>
   );
 }
