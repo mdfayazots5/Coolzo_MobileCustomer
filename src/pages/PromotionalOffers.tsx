@@ -12,7 +12,6 @@ import {
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 import { OfferService, Offer } from '@/services/offerService';
 import { toast } from 'sonner';
 
@@ -96,6 +95,10 @@ export default function PromotionalOffers() {
 
               <h3 className="text-[28px] font-display font-bold text-navy mb-4 leading-tight tracking-tighter uppercase italic">{offer.title}</h3>
               <p className="text-navy/40 text-[15px] leading-relaxed mb-12 font-medium italic">{offer.description}</p>
+              <div className="flex flex-wrap items-center gap-4 mb-12 text-[10px] font-bold uppercase tracking-[0.3em] text-navy/20">
+                {offer.category && <span className="rounded-full bg-navy/5 px-5 py-2">{offer.category}</span>}
+                <span className="rounded-full bg-gold/5 px-5 py-2">Min order ₹{offer.minOrderValue.toLocaleString()}</span>
+              </div>
 
               {/* Voucher Artifact Interface */}
               <div className="flex items-center gap-10 p-10 bg-navy/[0.03] rounded-[48px] border border-dashed border-gold/30 mb-12 relative overflow-hidden group/code">
@@ -122,7 +125,7 @@ export default function PromotionalOffers() {
                 </div>
                 <Button 
                    className="h-16 rounded-[28px] bg-navy text-gold font-bold px-12 text-[13px] uppercase tracking-[0.4em] shadow-3xl shadow-navy/40 active:scale-95 transition-all group overflow-hidden relative"
-                   onClick={() => navigate('/services')}
+                   onClick={() => navigate('/book')}
                 >
                   <span className="relative z-10">Dispatch Protocol</span>
                   <div className="absolute inset-0 bg-gold/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />

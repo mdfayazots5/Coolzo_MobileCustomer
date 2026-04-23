@@ -12,14 +12,41 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
-import { INVOICES } from '@/lib/mockData';
+import { PaymentService, Invoice } from '@/services/paymentService';
 import { cn } from '@/lib/utils';
 
 const PaymentStatus = () => {
   const { id, status } = useParams();
   const navigate = useNavigate();
-  const invoice = INVOICES.find(inv => inv.id === id);
+  const [invoice, setInvoice] = React.useState<Invoice | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
   const isSuccess = status === 'success';
+
+  React.useEffect(() => {
+    const loadInvoice = async () => {
+      if (!id) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await PaymentService.getInvoiceById(id);
+        setInvoice(response);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void loadInvoice();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Clock className="w-10 h-10 text-gold animate-pulse" />
+      </div>
+    );
+  }
 
   if (!invoice) return null;
 

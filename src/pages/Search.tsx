@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search as SearchIcon, ArrowLeft, X, Clock, ChevronRight, BookOpen, Wrench, Loader2 } from 'lucide-react';
+import { Search as SearchIcon, ArrowLeft, X, Clock, ChevronRight, Wrench, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { CatalogService } from '@/services/catalogService';
-import { ARTICLES } from '@/lib/mockData';
 
 export default function Search() {
   const navigate = useNavigate();
@@ -37,12 +36,7 @@ export default function Search() {
     return () => clearTimeout(delayDebounceFn);
   }, [query]);
 
-  const articleResults = ARTICLES.filter(a => 
-    a.title.toLowerCase().includes(query.toLowerCase()) || 
-    a.excerpt.toLowerCase().includes(query.toLowerCase())
-  );
-
-  const hasResults = query.length > 0 && (serviceResults.length > 0 || articleResults.length > 0);
+  const hasResults = query.length > 0 && serviceResults.length > 0;
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white pb-40 relative overflow-hidden">
@@ -135,7 +129,7 @@ export default function Search() {
                   {['Repair', 'Cleaning', 'Refill', 'Installation', 'Diagnostic'].map((cat, i) => (
                     <button 
                       key={i}
-                      onClick={() => navigate(`/app/services?category=${cat}`)}
+                      onClick={() => navigate(`/services?category=${encodeURIComponent(cat)}`)}
                       className="px-10 py-5 bg-white border border-navy/5 rounded-[24px] text-[11px] font-bold text-navy uppercase tracking-[0.3em] shadow-sm hover:bg-navy hover:text-gold transition-all active:scale-95 hover:shadow-2xl hover:shadow-navy/10"
                     >
                       {cat}
@@ -174,7 +168,7 @@ export default function Search() {
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0, transition: { delay: i * 0.05 } }}
                             className="bg-white p-8 rounded-[48px] border border-navy/5 shadow-2xl shadow-black/[0.01] flex items-center justify-between group active:scale-[0.99] transition-all hover:border-gold/30 hover:shadow-gold/5 relative overflow-hidden"
-                            onClick={() => navigate(`/app/service/${service.id}`)}
+                            onClick={() => navigate(`/service/${service.id}`)}
                           >
                             <div className="flex items-center gap-8 relative z-10">
                               <div className="w-20 h-20 rounded-[28px] bg-gold/5 flex items-center justify-center text-gold shadow-inner group-hover:bg-gold group-hover:text-navy transition-all duration-700">
@@ -195,41 +189,6 @@ export default function Search() {
                               </div>
                             </div>
                             <div className="absolute top-0 right-0 w-32 h-32 bg-gold/[0.01] rounded-bl-full pointer-events-none group-hover:bg-gold/5 transition-colors duration-1000" />
-                          </motion.div>
-                        ))}
-                      </div>
-                    </section>
-                  )}
-
-                  {/* Knowledge Archives */}
-                  {articleResults.length > 0 && (
-                    <section className="space-y-10">
-                      <div className="px-6">
-                        <h3 className="text-[11px] font-bold uppercase tracking-[0.5em] text-navy/20 mb-4">Knowledge Archives</h3>
-                        <h2 className="text-[36px] font-display font-bold text-navy tracking-tighter italic">Institutional Intelligence</h2>
-                      </div>
-                      <div className="grid grid-cols-1 gap-6">
-                        {articleResults.map((article, i) => (
-                          <motion.div
-                            key={article.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0, transition: { delay: i * 0.05 } }}
-                            className="bg-white p-8 rounded-[48px] border border-navy/5 shadow-2xl shadow-black/[0.01] flex items-center justify-between group active:scale-[0.99] transition-all hover:border-navy hover:shadow-navy/5 relative overflow-hidden"
-                            onClick={() => navigate(`/app/blog/${article.id}`)}
-                          >
-                            <div className="flex items-center gap-8 relative z-10">
-                              <div className="w-20 h-20 rounded-[28px] bg-navy/5 flex items-center justify-center text-navy/10 shadow-inner group-hover:bg-navy group-hover:text-gold transition-all duration-700">
-                                <BookOpen className="w-10 h-10" />
-                              </div>
-                              <div className="space-y-1 font-bold italic">
-                                <h4 className="text-navy text-[18px] tracking-tighter line-clamp-1 leading-none mb-1">{article.title}</h4>
-                                <p className="text-navy/20 text-[10px] uppercase tracking-[0.4em]">{article.category} • {article.readTime} Sync</p>
-                              </div>
-                            </div>
-                            <div className="w-12 h-12 rounded-[18px] bg-navy/5 flex items-center justify-center group-hover:bg-navy group-hover:text-gold transition-all text-navy/10 relative z-10">
-                                <ChevronRight className="w-6 h-6" />
-                            </div>
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-navy/[0.01] rounded-bl-full pointer-events-none group-hover:bg-navy/5 transition-colors duration-1000" />
                           </motion.div>
                         ))}
                       </div>

@@ -45,7 +45,13 @@ const Login = () => {
     try {
       await AuthService.loginWithPhone(phone);
       toast.success('Transmission successful. Check signals (OTP)');
-      navigate('/otp', { state: { phone: `+91 ${phone}` } });
+      navigate('/otp', {
+        state: {
+          phone,
+          displayPhone: `+91 ${phone}`,
+          mode: 'login',
+        },
+      });
     } catch (error) {
       toast.error('Signal transmission failure');
     } finally {

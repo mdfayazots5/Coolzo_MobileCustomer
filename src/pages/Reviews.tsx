@@ -1,18 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Star, Filter, MessageSquare, ThumbsUp, Loader2 } from 'lucide-react';
+import { ArrowLeft, Star, MessageSquare, ThumbsUp, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { SERVICE_CATEGORIES } from '@/lib/mockData';
+import { CatalogService } from '@/services/catalogService';
 import { ReviewService, Review } from '@/services/reviewService';
 import { cn } from '@/lib/utils';
 
 export default function Reviews() {
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState('All');
+  const [filters, setFilters] = useState<string[]>(['All']);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFilters = async () => {
+      try {
+        const services = await CatalogService.getServices();
+        const categories = [...new Set(services.map((service) => service.category).filter(Boolean))];
+        setFilters(['All', ...categories]);
+      } catch {
+        setFilters(['All']);
+      }
+    };
+
+    void fetchFilters();
+  }, []);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -37,6 +52,12 @@ export default function Reviews() {
     );
   }
 
+  const averageRating = reviews.length
+    ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)
+    : '0.0';
+  const ratingCounts = [5, 4, 3, 2, 1].map((stars) => reviews.filter((review) => review.rating === stars).length);
+  const totalReviews = reviews.length || 1;
+
   return (
     <div className="flex flex-col min-h-screen bg-warm-white pb-40 relative overflow-hidden italic">
       {/* Background Ambience */}
@@ -60,20 +81,20 @@ export default function Reviews() {
         {/* Aggregate Sentiment Matrix */}
         <div className="flex items-center gap-12 relative z-10 px-4">
           <div className="text-center group active:scale-95 transition-all">
-            <div className="text-[72px] font-display font-bold text-warm-white tracking-tighter leading-none mb-4 group-hover:text-gold transition-colors italic">4.9</div>
+            <div className="text-[72px] font-display font-bold text-warm-white tracking-tighter leading-none mb-4 group-hover:text-gold transition-colors italic">{averageRating}</div>
             <div className="flex justify-center gap-1 mb-6">
               {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-5 h-5 text-gold fill-gold drop-shadow-[0_0_12px_rgba(201,162,74,0.6)]" />)}
             </div>
-            <p className="text-[11px] text-warm-white/20 font-bold uppercase tracking-[0.4em] leading-none">1,240 Validated Audits</p>
+            <p className="text-[11px] text-warm-white/20 font-bold uppercase tracking-[0.4em] leading-none">{reviews.length} Published Reviews</p>
           </div>
           <div className="flex-1 space-y-4 max-w-[320px]">
-            {[5, 4, 3, 2, 1].map((rating) => (
+            {[5, 4, 3, 2, 1].map((rating, index) => (
               <div key={rating} className="flex items-center gap-6 group/row">
                 <span className="text-[10px] font-bold text-warm-white/20 w-3 group-hover/row:text-gold transition-colors">{rating}</span>
                 <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden shadow-inner">
                   <motion.div 
                     initial={{ width: 0 }}
-                    animate={{ width: `${rating === 5 ? 85 : rating === 4 ? 10 : 5}%` }}
+                    animate={{ width: `${(ratingCounts[index] / totalReviews) * 100}%` }}
                     className="h-full bg-gold rounded-full shadow-[0_0_15px_rgba(201,162,74,0.4)]" 
                   />
                 </div>
@@ -88,7 +109,7 @@ export default function Reviews() {
 
       {/* Filter Matrix */}
       <div className="px-8 -mt-16 py-8 overflow-x-auto flex gap-4 no-scrollbar bg-transparent relative z-40">
-        {SERVICE_CATEGORIES.map((category) => (
+        {filters.map((category) => (
           <button
             key={category}
             onClick={() => setActiveFilter(category)}
@@ -156,7 +177,7 @@ export default function Reviews() {
 
               <div className="flex items-center justify-between pt-10 border-t border-navy/5">
                 <Badge variant="secondary" className="bg-navy/5 text-navy/30 border-none text-[10px] font-bold uppercase tracking-[0.4em] px-6 py-2 rounded-full">
-                  {review.serviceId ? 'Institutional Feedback' : 'Global Audit'}
+                  {review.serviceName || 'Institutional Feedback'}
                 </Badge>
                 <button className="flex items-center gap-3 text-gold/40 hover:text-gold transition-all active:scale-90 group/like">
                   <ThumbsUp className="w-4 h-4 group-hover:-translate-y-1 transition-transform" />

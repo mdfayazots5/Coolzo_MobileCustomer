@@ -1,12 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
+import { BookingService } from '@/services/bookingService';
 import { useBookingStore } from '@/store/useBookingStore';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { 
-  Calendar as CalendarIcon, 
   Clock, 
   Zap, 
   AlertTriangle,
@@ -16,7 +14,8 @@ import {
 import { format, addDays, isSameDay } from 'date-fns';
 
 export default function Step4DateTime() {
-  const { slot, updateSlot } = useBookingStore();
+  const { slot, location, updateSlot } = useBookingStore();
+  const [availableSlots, setAvailableSlots] = useState<any[]>([]);
 
   // Generate next 7 days
   const next7Days = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i));
@@ -26,6 +25,18 @@ export default function Step4DateTime() {
     { id: 'Afternoon', label: 'Afternoon', range: '12 PM - 4 PM', icon: Clock },
     { id: 'Evening', label: 'Evening', range: '4 PM - 7 PM', icon: Clock },
   ] as const;
+
+  useEffect(() => {
+    if (!location.zoneId || !slot.date) {
+      setAvailableSlots([]);
+      return;
+    }
+
+    const slotDate = slot.date.split('T')[0];
+    void BookingService.getSlots(location.zoneId, slotDate)
+      .then(setAvailableSlots)
+      .catch(() => setAvailableSlots([]));
+  }, [location.zoneId, slot.date]);
 
   return (
     <div className="space-y-10">
@@ -91,7 +102,7 @@ export default function Step4DateTime() {
                 return (
                   <button
                     key={i}
-                    onClick={() => updateSlot({ date: date.toISOString() })}
+                    onClick={() => updateSlot({ date: date.toISOString(), timeWindow: null, slotAvailabilityId: null })}
                     className={cn(
                       "snap-center shrink-0 w-20 h-24 rounded-[24px] border-2 flex flex-col items-center justify-center gap-1 transition-all",
                       isSelected 
@@ -115,12 +126,17 @@ export default function Step4DateTime() {
             >
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mb-4 px-2">Select Time Window</h3>
               <div className="space-y-3">
-                {timeWindows.map((window) => (
+                {timeWindows.map((window) => {
+                  const matchedSlot = availableSlots.find((item) => item.slotLabel.toLowerCase().includes(window.id.toLowerCase()) && item.isAvailable);
+
+                  return (
                   <button
                     key={window.id}
-                    onClick={() => updateSlot({ timeWindow: window.id })}
+                    onClick={() => matchedSlot && updateSlot({ timeWindow: window.id, slotAvailabilityId: matchedSlot.slotAvailabilityId })}
+                    disabled={!matchedSlot}
                     className={cn(
                       "w-full p-5 rounded-3xl border-2 flex items-center justify-between transition-all",
+                      !matchedSlot && "opacity-40 cursor-not-allowed",
                       slot.timeWindow === window.id 
                         ? "border-gold bg-gold/5 text-navy" 
                         : "border-navy/5 bg-white text-navy/60 hover:border-navy/10"
@@ -135,7 +151,7 @@ export default function Step4DateTime() {
                       </div>
                       <div className="text-left">
                         <p className="font-bold text-sm">{window.label}</p>
-                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">{window.range}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">{matchedSlot?.slotLabel || window.range}</p>
                       </div>
                     </div>
                     {slot.timeWindow === window.id ? (
@@ -144,7 +160,8 @@ export default function Step4DateTime() {
                       <ChevronRight className="w-4 h-4 opacity-20" />
                     )}
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </motion.section>
           )}

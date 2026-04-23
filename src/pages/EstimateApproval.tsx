@@ -3,48 +3,38 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft, 
-  CheckCircle2, 
-  XCircle, 
   AlertCircle, 
   FileText,
   Info,
-  ChevronDown,
   ShieldCheck,
   Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookingService } from '@/services/bookingService';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-
-const ESTIMATE_ITEMS = [
-  { id: 1, name: 'Capacitor Replacement', type: 'Part', qty: 1, price: 450 },
-  { id: 2, name: 'Gas Leakage Repair', type: 'Labor', qty: 1, price: 850 },
-  { id: 3, name: 'Copper Pipe (per ft)', type: 'Part', qty: 2, price: 350 },
-];
 
 export default function EstimateApproval() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [job, setJob] = useState<any>(null);
+  const [estimate, setEstimate] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
 
   useEffect(() => {
-    const fetchJob = async () => {
+    const fetchEstimate = async () => {
       if (!id) return;
       try {
-        const data = await BookingService.getBookingById(id);
-        setJob(data);
+        const data = await BookingService.getEstimateApproval(id);
+        setEstimate(data);
       } catch (error) {
-        console.error('Failed to fetch job:', error);
+        console.error('Failed to fetch estimate:', error);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchJob();
+    fetchEstimate();
   }, [id]);
 
   if (isLoading) {
@@ -55,21 +45,21 @@ export default function EstimateApproval() {
     );
   }
 
-  if (!job) return (
+  if (!estimate) return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
-      <h2 className="text-2xl font-display font-bold text-navy mb-4">Job Not Found</h2>
+      <h2 className="text-2xl font-display font-bold text-navy mb-4">Estimate Not Found</h2>
       <Button onClick={() => navigate(-1)}>Go Back</Button>
     </div>
   );
 
-  const subtotal = ESTIMATE_ITEMS.reduce((acc, item) => acc + (item.price * item.qty), 0);
-  const tax = subtotal * 0.18;
-  const total = subtotal + tax;
+  const subtotal = estimate.subTotal;
+  const tax = estimate.tax;
+  const total = estimate.total;
 
   const handleApprove = async () => {
     setIsSubmitting(true);
     try {
-      await BookingService.approveEstimate(id!, 'est-123');
+      await BookingService.approveEstimate(id!, estimate.estimateId);
       toast.success("Estimate approved! Technician will proceed.");
       navigate(`/app/job-tracker/${id}`);
     } catch (error) {
@@ -79,10 +69,18 @@ export default function EstimateApproval() {
     }
   };
 
-  const handleDecline = () => {
-    setShowDeclineDialog(false);
-    toast.error("Estimate declined. Technician notified.");
-    navigate(`/app/job-tracker/${id}`);
+  const handleDecline = async () => {
+    setIsSubmitting(true);
+    try {
+      await BookingService.rejectEstimate(id!, estimate.estimateId);
+      setShowDeclineDialog(false);
+      toast.error("Estimate declined. Technician notified.");
+      navigate(`/app/job-tracker/${id}`);
+    } catch (error) {
+      toast.error("Failed to decline estimate");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -98,7 +96,7 @@ export default function EstimateApproval() {
           </button>
           <div>
             <h1 className="text-[20px] font-display font-bold text-navy tracking-tight leading-none">Fiscal Synopsis</h1>
-            <p className="text-[10px] font-bold text-navy/30 uppercase tracking-[0.2em] mt-1.5">{job.srNumber} • Engineering Review</p>
+            <p className="text-[10px] font-bold text-navy/30 uppercase tracking-[0.2em] mt-1.5">{estimate.srNumber} • {estimate.estimateNumber}</p>
           </div>
         </div>
       </div>
@@ -122,11 +120,11 @@ export default function EstimateApproval() {
         <section className="space-y-6">
           <div className="flex items-center justify-between px-1">
             <h3 className="text-[11px] font-bold uppercase tracking-[0.3em] text-navy/20">Artifact Breakdown</h3>
-            <Badge className="bg-navy/5 text-navy/40 border-none font-bold text-[9px] uppercase tracking-widest px-3 py-1.5 rounded-full">3 Delta Units</Badge>
+            <Badge className="bg-navy/5 text-navy/40 border-none font-bold text-[9px] uppercase tracking-widest px-3 py-1.5 rounded-full">{estimate.items.length} Delta Units</Badge>
           </div>
           <div className="bg-white rounded-[40px] overflow-hidden border border-navy/5 shadow-2xl shadow-black/[0.02]">
             <div className="p-10 space-y-8">
-              {ESTIMATE_ITEMS.map((item) => (
+              {estimate.items.map((item: any) => (
                 <div key={item.id} className="flex items-start justify-between group">
                   <div className="flex-1 space-y-1.5">
                     <p className="font-bold text-navy text-[16px] tracking-tight uppercase group-hover:text-gold transition-colors">{item.name}</p>
@@ -206,7 +204,7 @@ export default function EstimateApproval() {
               <div className="space-y-4">
                 <Button 
                   className="w-full h-16 rounded-[24px] bg-red-600 text-white font-bold text-[13px] uppercase tracking-[0.3em] shadow-2xl shadow-red-500/20 active:scale-95 transition-all hover:bg-red-700"
-                  onClick={handleDecline}
+                  onClick={() => void handleDecline()}
                 >
                   Yes, Abort
                 </Button>

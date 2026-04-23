@@ -51,7 +51,7 @@ const Invoices = () => {
 
   const totalOutstanding = invoices
     .filter(inv => inv.status === 'Pending' || inv.status === 'Overdue')
-    .reduce((sum, inv) => sum + inv.amount, 0);
+    .reduce((sum, inv) => sum + (inv.balanceAmount ?? inv.amount), 0);
 
   if (isLoading) {
     return (
@@ -165,7 +165,7 @@ const Invoices = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="bg-white rounded-[72px] p-12 border border-navy/5 shadow-3xl shadow-black/[0.01] group active:scale-[0.98] transition-all hover:border-gold/30 hover:shadow-3xl relative overflow-hidden"
-                  onClick={() => navigate(`/app/invoice/${inv.id}`)}
+                  onClick={() => navigate(`/app/invoices/${inv.id}`)}
                 >
                   <div className="flex justify-between items-start mb-16">
                     <div className="flex items-center gap-8">

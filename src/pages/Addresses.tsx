@@ -155,6 +155,14 @@ const Addresses = () => {
                     {addr.addressLine1}, {addr.addressLine2 && `${addr.addressLine2}, `}
                     {addr.city} - {addr.pinCode}
                   </p>
+                  <div className="flex flex-wrap gap-3">
+                    <Badge className="bg-navy/5 text-navy/50 border-none font-bold text-[10px] uppercase tracking-[0.3em] px-4 py-2 rounded-full">
+                      {addr.type}
+                    </Badge>
+                    <Badge className="bg-gold/10 text-gold border-none font-bold text-[10px] uppercase tracking-[0.3em] px-4 py-2 rounded-full">
+                      {addr.zoneId ? `Zone ${addr.zoneId}` : `PIN ${addr.pinCode}`}
+                    </Badge>
+                  </div>
                 </div>
               </div>
 

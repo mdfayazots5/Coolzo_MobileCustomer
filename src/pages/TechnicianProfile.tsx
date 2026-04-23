@@ -4,20 +4,25 @@ import { ChevronLeft, Star, ShieldCheck, Award, MessageSquare, Briefcase, Loader
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { TechnicianService, Technician } from '@/services/technicianService';
-import { REVIEWS } from '@/lib/mockData';
+import { ReviewService, Review } from '@/services/reviewService';
 
 const TechnicianProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [technician, setTechnician] = useState<Technician | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchTechnician = async () => {
       if (!id) return;
       try {
-        const data = await TechnicianService.getTechnicianById(id);
+        const [data, reviewItems] = await Promise.all([
+          TechnicianService.getTechnicianById(id),
+          ReviewService.getReviews(),
+        ]);
         setTechnician(data);
+        setReviews(reviewItems.slice(0, 3));
       } catch (error) {
         console.error('Failed to fetch technician:', error);
       } finally {
@@ -130,7 +135,7 @@ const TechnicianProfile = () => {
             <button className="text-[11px] font-bold text-gold uppercase tracking-[0.4em] bg-gold/5 px-8 py-3.5 rounded-full border border-gold/10 active:scale-90 transition-all hover:bg-gold/10 shadow-sm">Archive</button>
           </div>
           <div className="space-y-8">
-            {REVIEWS.slice(0, 3).map((review) => (
+            {reviews.map((review) => (
               <div key={review.id} className="bg-white p-10 rounded-[56px] border border-navy/5 shadow-2xl shadow-black/[0.01] relative overflow-hidden group active:scale-[0.99] transition-all hover:border-gold/30 lg:px-12">
                 <div className="flex justify-between items-start mb-8">
                   <div className="flex items-center gap-6">
@@ -146,12 +151,17 @@ const TechnicianProfile = () => {
                       </div>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold text-navy/20 uppercase tracking-[0.3em]">{new Date(review.date).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}</span>
+                  <span className="text-[10px] font-bold text-navy/20 uppercase tracking-[0.3em]">{new Date(review.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}</span>
                 </div>
                 <p className="text-[15px] text-navy/60 leading-relaxed italic font-medium">"{review.comment}"</p>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gold/[0.02] rounded-bl-full pointer-events-none group-hover:bg-gold/5 transition-colors duration-1000" />
               </div>
             ))}
+            {reviews.length === 0 && (
+              <div className="bg-white p-10 rounded-[56px] border border-navy/5 shadow-2xl shadow-black/[0.01] text-center">
+                <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-navy/20">No published customer excerpts available yet.</p>
+              </div>
+            )}
           </div>
         </section>
 

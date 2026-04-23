@@ -1,4 +1,4 @@
-export const IS_MOCK = true; // Single source of truth for demo/mock mode
+export const IS_MOCK = false; // Single source of truth for demo/mock mode
 
 export const FEATURE_FLAGS = {
   SHOW_WHATS_NEW: false,
@@ -9,6 +9,6 @@ export const FEATURE_FLAGS = {
 };
 
 export const API_CONFIG = {
-  BASE_URL: (import.meta as any).env?.VITE_API_BASE_URL || 'https://api.coolzo.app/v1',
+  BASE_URL: (import.meta as any).env?.VITE_API_BASE_URL || 'https://localhost:7001/api/v1',
   IS_MOCK: IS_MOCK,
 };

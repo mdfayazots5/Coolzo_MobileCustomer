@@ -22,8 +22,8 @@ const ChangePassword = () => {
       toast.error('Passwords do not match');
       return;
     }
-    if (passwords.new.length < 6) {
-      toast.error('Password must be at least 6 characters');
+    if (passwords.new.length < 8 || !/\d/.test(passwords.new)) {
+      toast.error('Password must be at least 8 characters and include a digit');
       return;
     }
 

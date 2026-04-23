@@ -33,8 +33,7 @@ export default function Contact() {
         subject: formData.subject,
         description: formData.message,
         category: 'Concierge Inquiry',
-        priority: 'Medium',
-        status: 'Open'
+        priority: 'Medium'
       });
       toast.success('Concierge mission acknowledged. We will synchronize shortly.');
       setFormData({ ...formData, subject: '', message: '' });

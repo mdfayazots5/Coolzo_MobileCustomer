@@ -1,20 +1,18 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useBookingStore, ACBrand, ACType, ACCapacity } from '@/store/useBookingStore';
 import { cn } from '@/lib/utils';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { BookingService } from '@/services/bookingService';
+import { useNavigate } from 'react-router-dom';
 import { 
   Monitor, 
   Layout, 
   Grid, 
   Box, 
   Plus, 
-  Minus,
-  Check
+  Minus
 } from 'lucide-react';
 
-const BRANDS: ACBrand[] = ['Samsung', 'LG', 'Daikin', 'Voltas', 'Blue Star', 'Mitsubishi', 'Lloyd', 'Other'];
 const TYPES: { id: ACType; icon: any; label: string }[] = [
   { id: 'Split', icon: Monitor, label: 'Split AC' },
   { id: 'Window', icon: Layout, label: 'Window AC' },
@@ -24,7 +22,19 @@ const TYPES: { id: ACType; icon: any; label: string }[] = [
 const CAPACITIES: ACCapacity[] = ['1T', '1.5T', '2T', '3T+'];
 
 export default function Step2Equipment() {
+  const navigate = useNavigate();
   const { equipment, updateEquipment } = useBookingStore();
+  const [brands, setBrands] = useState<string[]>([]);
+  const [registeredEquipment, setRegisteredEquipment] = useState<any[]>([]);
+
+  useEffect(() => {
+    void BookingService.getBrands()
+      .then((items) => setBrands(items.map((item) => item.brandName)))
+      .catch(() => setBrands([]));
+    void BookingService.getCustomerEquipment()
+      .then(setRegisteredEquipment)
+      .catch(() => setRegisteredEquipment([]));
+  }, []);
 
   return (
     <div className="space-y-10">
@@ -33,14 +43,63 @@ export default function Step2Equipment() {
         <p className="text-navy/60 text-sm">Tell us about your AC unit for better dispatch.</p>
       </div>
 
+      {registeredEquipment.length > 0 && (
+        <section>
+          <div className="mb-4 flex items-center justify-between px-2">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-navy/40">Saved Equipment</h3>
+            <button
+              type="button"
+              onClick={() => navigate('/app/equipment/new')}
+              className="text-[10px] font-bold uppercase tracking-widest text-gold"
+            >
+              Add New
+            </button>
+          </div>
+          <div className="space-y-3">
+            {registeredEquipment.map((item) => (
+              <button
+                key={item.customerEquipmentId}
+                onClick={() => updateEquipment({
+                  equipmentId: item.customerEquipmentId,
+                  brand: item.brand as ACBrand,
+                  type: item.type as ACType,
+                  capacity: item.capacity as ACCapacity,
+                })}
+                className={cn(
+                  "w-full rounded-2xl border p-4 text-left transition-all",
+                  equipment.equipmentId === item.customerEquipmentId
+                    ? "border-gold bg-gold/5"
+                    : "border-navy/5 bg-white hover:border-navy/10"
+                )}
+              >
+                <p className="text-sm font-bold text-navy">{item.name}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40">
+                  {item.brand} • {item.type} • {item.capacity}
+                </p>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {registeredEquipment.length === 0 && (
+        <button
+          type="button"
+          onClick={() => navigate('/app/equipment/new')}
+          className="w-full rounded-2xl border border-dashed border-gold/30 bg-gold/5 p-4 text-[10px] font-bold uppercase tracking-widest text-gold"
+        >
+          Add Equipment From Account
+        </button>
+      )}
+
       {/* Brand Selection */}
       <section>
         <h3 className="text-[10px] font-bold uppercase tracking-widest text-navy/40 mb-4 px-2">Select Brand</h3>
         <div className="grid grid-cols-4 gap-3">
-          {BRANDS.map((brand) => (
+          {brands.map((brand) => (
             <button
               key={brand}
-              onClick={() => updateEquipment({ brand })}
+              onClick={() => updateEquipment({ equipmentId: null, brand: brand as ACBrand })}
               className={cn(
                 "p-3 rounded-xl border text-[10px] font-bold transition-all",
                 equipment.brand === brand 

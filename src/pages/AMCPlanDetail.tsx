@@ -5,13 +5,14 @@ import { ArrowLeft, Check, ShieldCheck, Zap, Crown, Building2, Info, HelpCircle,
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AMCService, AMCPlan } from '@/services/amcService';
-import { cn } from '@/lib/utils';
+import { useBookingStore } from '@/store/useBookingStore';
 
 export default function AMCPlanDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [plan, setPlan] = useState<AMCPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { updateBooking, setStep, resetBooking } = useBookingStore();
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -44,6 +45,16 @@ export default function AMCPlanDetail() {
       </div>
     );
   }
+
+  const handleEnroll = () => {
+    resetBooking();
+    updateBooking({
+      serviceId: 'amc',
+      subServiceId: plan.id,
+    });
+    setStep(2);
+    navigate('/app/book');
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white pb-48 relative overflow-hidden">
@@ -157,7 +168,7 @@ export default function AMCPlanDetail() {
         <div className="max-w-[440px] mx-auto italic">
           <Button 
             className="w-full h-24 rounded-[32px] bg-navy text-gold hover:bg-navy/95 font-bold text-[20px] uppercase tracking-[0.35em] shadow-3xl shadow-navy/40 active:scale-95 transition-all italic"
-            onClick={() => navigate('/app/book')}
+            onClick={handleEnroll}
           >
             Authorize Enrollment
           </Button>

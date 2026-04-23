@@ -113,16 +113,17 @@ const SupportTickets = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                   className="bg-white rounded-[72px] p-12 border border-navy/5 shadow-3xl shadow-black/[0.01] group active:scale-[0.98] transition-all hover:border-gold/30 hover:shadow-3xl hover:shadow-gold/[0.02] relative overflow-hidden italic"
-                  onClick={() => navigate(`/app/support/${ticket.id}`)}
+                  onClick={() => navigate(`/app/support/tickets/${ticket.id}`)}
                 >
                   <div className="flex justify-between items-start mb-16">
                     <div className="space-y-4">
                       <div className="flex items-center gap-6">
                         <span className="text-[10px] font-bold uppercase tracking-[0.5em] text-navy/20">Protocol Artifact</span>
                         <div className="h-px w-10 bg-gold/30" />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.5em] text-navy/60">TRACE: {ticket.id.slice(0, 8).toUpperCase()}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.5em] text-navy/60">TRACE: {(ticket.ticketNumber || ticket.id).toUpperCase()}</span>
                       </div>
                       <h3 className="font-display font-bold text-navy text-[32px] tracking-tighter leading-tight uppercase group-hover:text-gold transition-colors duration-700">{ticket.subject}</h3>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-navy/20">Last reply {new Date(ticket.updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                     </div>
                     <Badge className={cn(
                       "border-none font-bold text-[11px] uppercase tracking-[0.4em] px-8 py-3 rounded-full shadow-3xl shadow-black/[0.05]",
@@ -132,6 +133,9 @@ const SupportTickets = () => {
                     )}>
                       {ticket.status}
                     </Badge>
+                    {ticket.hasUnreadReply && (
+                      <div className="absolute top-12 right-12 w-4 h-4 rounded-full bg-red-500 shadow-[0_0_18px_rgba(239,68,68,0.55)]" />
+                    )}
                   </div>
 
                   <div className="grid grid-cols-3 py-12 border-y border-dashed border-navy/10 mb-16 gap-10">

@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Clock, CheckCircle2, ChevronDown, ShieldCheck, Star, Loader2 } from 'lucide-react';
+import { ArrowLeft, Clock, CheckCircle2, ChevronDown, ShieldCheck, Star, Loader2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useBookingStore } from '@/store/useBookingStore';
-import { FAQ_ITEMS } from '@/lib/mockData';
 import { CatalogService } from '@/services/catalogService';
 import { cn } from '@/lib/utils';
 
@@ -23,7 +22,7 @@ export default function ServiceDetail() {
       if (!id) return;
       try {
         const data = await CatalogService.getServiceById(id);
-        setService(data);
+        setService(data || null);
       } catch (error) {
         console.error('Failed to fetch service:', error);
       } finally {
@@ -38,7 +37,7 @@ export default function ServiceDetail() {
     resetBooking();
     updateBooking({ 
       serviceId: service.id, 
-      subServiceId: 'Standard Deployment' 
+      subServiceId: 'standard' 
     });
     setStep(2);
     navigate('/app/book');
@@ -57,7 +56,7 @@ export default function ServiceDetail() {
       <div className="flex flex-col items-center justify-center min-h-screen p-10 text-center space-y-8">
         <h1 className="text-[28px] font-display font-bold text-navy tracking-tight leading-none">Intelligence Void</h1>
         <p className="text-navy/40 text-[14px]">The requested service artifact does not exist in our active grid.</p>
-        <Button onClick={() => navigate('/app/services')} className="bg-gold text-navy font-bold rounded-2xl h-16 px-12 shadow-2xl shadow-gold/20 active:scale-95 transition-all">Recall Catalog</Button>
+        <Button onClick={() => navigate('/services')} className="bg-gold text-navy font-bold rounded-2xl h-16 px-12 shadow-2xl shadow-gold/20 active:scale-95 transition-all">Recall Catalog</Button>
       </div>
     );
   }
@@ -122,7 +121,7 @@ export default function ServiceDetail() {
             </div>
           </div>
           <div className="grid grid-cols-1 gap-4">
-            {service.included.map((item: string, index: number) => (
+            {(service.included.length > 0 ? service.included : ['Technician visit', 'Diagnosis', 'Service execution']).map((item: string, index: number) => (
               <div key={index} className="bg-white p-6 rounded-[32px] border border-navy/5 flex items-center gap-6 shadow-sm active:scale-[0.99] transition-all hover:border-gold/30 group">
                 <div className="w-12 h-12 rounded-2xl bg-gold/5 flex items-center justify-center text-gold group-hover:bg-gold group-hover:text-navy transition-all duration-500 shadow-inner">
                   <CheckCircle2 className="w-6 h-6" />
@@ -156,7 +155,7 @@ export default function ServiceDetail() {
             <h3 className="text-[28px] font-display font-bold text-navy tracking-tighter">Intelligence Ledger</h3>
           </div>
           <div className="space-y-4">
-            {FAQ_ITEMS.map((faq, index) => (
+            {(service.faqs.length > 0 ? service.faqs : [{ question: 'What happens after booking?', answer: 'A technician will be assigned after the booking is confirmed.' }]).map((faq, index) => (
               <div 
                 key={index}
                 className="bg-white rounded-[36px] border border-navy/5 overflow-hidden shadow-2xl shadow-black/[0.01] hover:border-gold/30 transition-all group"

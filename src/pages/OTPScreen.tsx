@@ -17,7 +17,10 @@ const OTPScreen = () => {
   const [isResending, setIsResending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  const phone = location.state?.phone || '+91 98765 43210';
+  const phone = location.state?.phone || '9876543210';
+  const displayPhone = location.state?.displayPhone || `+91 ${phone}`;
+  const mode = location.state?.mode || 'login';
+  const pendingProfile = location.state?.pendingProfile;
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -55,8 +58,14 @@ const OTPScreen = () => {
     setIsVerifying(true);
     try {
       const user = await AuthService.verifyOTP(phone, otp.join(''));
-      setUser(user);
-      toast.success('OTP Verified Successfully');
+      if (mode === 'profile-update' && pendingProfile) {
+        const updatedProfile = await AuthService.updateProfile(user.uid, pendingProfile);
+        setUser(updatedProfile);
+        toast.success('Phone verified and profile updated');
+      } else {
+        setUser(user);
+        toast.success('OTP Verified Successfully');
+      }
       navigate('/app');
     } catch (error) {
       toast.error('Invalid OTP. Please try again.');
@@ -90,7 +99,7 @@ const OTPScreen = () => {
       <div className="space-y-4 mb-12">
         <h1 className="text-3xl font-display font-bold text-navy">Verify Phone</h1>
         <p className="text-text-secondary leading-relaxed">
-          We've sent a 4-digit verification code to <span className="text-navy font-bold">{phone}</span>
+          We've sent a 4-digit verification code to <span className="text-navy font-bold">{displayPhone}</span>
         </p>
       </div>
 

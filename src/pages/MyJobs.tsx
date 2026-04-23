@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -7,26 +7,31 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import EmptyState from '@/components/EmptyState';
-import { JOBS, Job } from '@/lib/mockData';
+import { BookingService } from '@/services/bookingService';
 import { cn } from '@/lib/utils';
 
-type TabType = 'All' | 'Active' | 'Completed' | 'Cancelled';
+type TabType = 'All' | 'Upcoming' | 'Past' | 'Cancelled';
 
 export default function MyJobs() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('All');
+  const [jobs, setJobs] = useState<any[]>([]);
 
-  const filteredJobs = JOBS.filter(job => {
+  useEffect(() => {
+    void BookingService.getBookings().then(setJobs).catch(() => setJobs([]));
+  }, []);
+
+  const filteredJobs = jobs.filter(job => {
     const matchesTab = 
       activeTab === 'All' || 
-      (activeTab === 'Active' && !['Completed', 'Cancelled'].includes(job.status)) ||
-      (activeTab === 'Completed' && job.status === 'Completed') ||
-      (activeTab === 'Cancelled' && job.status === 'Cancelled');
+      (activeTab === 'Upcoming' && !['Completed', 'Cancelled'].includes(job.operationalStatus || job.status)) ||
+      (activeTab === 'Past' && ['Completed'].includes(job.operationalStatus || job.status)) ||
+      (activeTab === 'Cancelled' && (job.operationalStatus || job.status) === 'Cancelled');
     
     return matchesTab;
   });
 
-  const getStatusColor = (status: Job['status']) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'Completed': return 'text-green-500 bg-green-500/10 border-green-500/20';
       case 'Cancelled': return 'text-red-500 bg-red-500/10 border-red-500/20';
@@ -61,7 +66,7 @@ export default function MyJobs() {
       {/* Navigation Matrix */}
       <div className="px-8 -mt-24 relative z-30">
         <div className="bg-white/80 backdrop-blur-3xl p-5 rounded-[52px] border border-navy/5 shadow-3xl shadow-black/[0.05] flex gap-4 overflow-x-auto no-scrollbar">
-          {(['All', 'Active', 'Completed', 'Cancelled'] as TabType[]).map((tab) => (
+          {(['All', 'Upcoming', 'Past', 'Cancelled'] as TabType[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -94,7 +99,7 @@ export default function MyJobs() {
                   animate={{ opacity: 1, y: 0, transition: { delay: idx * 0.05 + 0.2 } }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   className="bg-white rounded-[72px] p-12 border border-navy/5 shadow-3xl shadow-black/[0.01] group active:scale-[0.99] transition-all relative overflow-hidden hover:border-gold/30 hover:shadow-3xl"
-                  onClick={() => navigate(`/app/booking-detail/${job.id}`)}
+                  onClick={() => navigate(`/app/booking-detail/${job.bookingId || job.id}`)}
                 >
                   <div className="flex items-start justify-between mb-12 relative z-10">
                     <div className="flex items-center gap-10">
@@ -102,26 +107,26 @@ export default function MyJobs() {
                         <FileText className="w-10 h-10" />
                       </div>
                       <div className="space-y-3 font-bold">
-                        <p className="text-[12px] uppercase tracking-[0.6em] text-navy/20 leading-none">{job.srNumber}</p>
-                        <h3 className="text-navy text-[32px] tracking-tighter leading-none uppercase group-hover:text-gold transition-colors">{job.serviceType}</h3>
+                        <p className="text-[12px] uppercase tracking-[0.6em] text-navy/20 leading-none">{job.bookingReference || job.srNumber}</p>
+                        <h3 className="text-navy text-[32px] tracking-tighter leading-none uppercase group-hover:text-gold transition-colors">{job.serviceName || job.serviceType}</h3>
                       </div>
                     </div>
                     <div className={cn(
                       "px-8 py-3 rounded-full text-[10px] font-bold uppercase tracking-[0.4em] border shadow-2xl backdrop-blur-3xl",
-                      getStatusColor(job.status)
+                      getStatusColor(job.operationalStatus || job.status)
                     )}>
-                      {job.status}
+                      {job.operationalStatus || job.status}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-12 mb-12 px-2 relative z-10">
                     <div className="space-y-4">
                       <p className="text-[11px] font-bold uppercase tracking-[0.5em] text-navy/20 leading-none">Registry Date</p>
-                      <p className="text-[20px] font-bold text-navy tracking-tight uppercase leading-none italic">{job.date}</p>
+                      <p className="text-[20px] font-bold text-navy tracking-tight uppercase leading-none italic">{job.slotDate || job.date}</p>
                     </div>
                     <div className="space-y-4 text-right">
                       <p className="text-[11px] font-bold uppercase tracking-[0.5em] text-navy/20 leading-none">Temporal Slot</p>
-                      <p className="text-[20px] font-bold text-navy tracking-tight uppercase leading-none truncate italic">{job.timeSlot.split('(')[0]}</p>
+                      <p className="text-[20px] font-bold text-navy tracking-tight uppercase leading-none truncate italic">{(job.slotLabel || job.timeSlot || '').split('(')[0]}</p>
                     </div>
                   </div>
 
@@ -132,7 +137,7 @@ export default function MyJobs() {
                         <div className="w-3 h-3 rounded-full bg-gold shadow-[0_0_8px_rgba(201,162,74,0.4)] relative" />
                       </div>
                       <span className="text-[12px] font-bold uppercase tracking-[0.4em] text-navy/20">
-                        {job.technicianId ? 'Expert Vector Locked' : 'Synchronizing Logistics...'}
+                        {job.assignedTechnicianId ? 'Expert Vector Locked' : 'Synchronizing Logistics...'}
                       </span>
                     </div>
                     <Button 
@@ -140,14 +145,14 @@ export default function MyJobs() {
                       className="h-18 px-12 rounded-[32px] text-gold font-bold text-[13px] uppercase tracking-[0.4em] gap-6 active:scale-95 transition-all bg-gold/5 hover:bg-gold hover:text-navy shadow-3xl shadow-gold/5 group-hover:bg-gold group-hover:text-navy border border-gold/10"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (['Completed', 'Cancelled'].includes(job.status)) {
-                          navigate(`/app/booking-detail/${job.id}`);
+                        if (['Completed', 'Cancelled'].includes(job.operationalStatus || job.status)) {
+                          navigate(`/app/booking-detail/${job.bookingId || job.id}`);
                         } else {
-                          navigate(`/job-tracker/${job.id}`);
+                          navigate(`/job-tracker/${job.bookingId || job.id}`);
                         }
                       }}
                     >
-                      {['Completed', 'Cancelled'].includes(job.status) ? 'Audit Report' : 'Track Vector'}
+                      {['Completed', 'Cancelled'].includes(job.operationalStatus || job.status) ? 'Audit Report' : 'Track Vector'}
                       <ChevronRight className="w-5 h-5 group-hover:translate-x-3 transition-transform duration-700" />
                     </Button>
                   </div>

@@ -14,19 +14,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { JOBS } from '@/lib/mockData';
+import { BookingService } from '@/services/bookingService';
 import { SupportService } from '@/services/supportService';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
-
-const CATEGORIES = [
-  'Booking Issue',
-  'Technician Concern',
-  'Invoice Query',
-  'AMC Query',
-  'App Issue',
-  'General'
-];
 
 const RaiseTicket = () => {
   const navigate = useNavigate();
@@ -34,6 +25,8 @@ const RaiseTicket = () => {
   const { user } = useAuthStore();
   const initialSrNumber = location.state?.srNumber || '';
 
+  const [categories, setCategories] = useState<string[]>([]);
+  const [recentBookings, setRecentBookings] = useState<any[]>([]);
   const [category, setCategory] = useState('');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
@@ -41,6 +34,23 @@ const RaiseTicket = () => {
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  React.useEffect(() => {
+    const load = async () => {
+      try {
+        const [nextCategories, bookings] = await Promise.all([
+          SupportService.getCategoryOptions(),
+          user ? BookingService.getBookings() : Promise.resolve([]),
+        ]);
+        setCategories(nextCategories);
+        setRecentBookings(bookings.slice(0, 5));
+      } catch (error) {
+        setCategories(['Booking Issue', 'Technician Complaint', 'Billing Dispute', 'AMC Enquiry', 'General Enquiry']);
+      }
+    };
+
+    void load();
+  }, [user]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -75,7 +85,7 @@ const RaiseTicket = () => {
         subject,
         description,
         priority: 'Medium',
-        status: 'Open'
+        relatedBookingId: srNumber || undefined,
       });
       setShowSuccess(true);
     } catch (error) {
@@ -149,7 +159,7 @@ const RaiseTicket = () => {
           <div className="space-y-10">
             <h3 className="text-[12px] font-bold uppercase tracking-[0.6em] text-navy/20 ml-2">Objective Class</h3>
             <div className="grid grid-cols-2 gap-6">
-              {CATEGORIES.slice(0, 4).map((cat) => (
+              {(categories.length > 0 ? categories : ['Booking Issue', 'Technician Complaint', 'Billing Dispute', 'AMC Enquiry']).slice(0, 4).map((cat) => (
                 <button
                   key={cat}
                   type="button"
@@ -187,9 +197,9 @@ const RaiseTicket = () => {
                   className="w-full h-22 pl-10 pr-20 bg-navy/[0.03] border border-navy/5 rounded-[40px] text-[18px] font-display font-bold text-navy appearance-none focus:outline-none focus:bg-white focus:ring-4 focus:ring-gold/10 transition-all shadow-inner focus:shadow-3xl focus:shadow-gold/5 uppercase"
                 >
                   <option value="">General Institutional Inquiry</option>
-                  {JOBS.slice(0, 5).map(job => (
-                    <option key={job.id} value={job.srNumber}>
-                      {job.srNumber} — {job.serviceType.toUpperCase()}
+                  {recentBookings.map(job => (
+                    <option key={job.bookingId} value={job.bookingId}>
+                      {job.bookingReference} — {job.serviceName.toUpperCase()}
                     </option>
                   ))}
                 </select>

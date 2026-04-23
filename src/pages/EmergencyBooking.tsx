@@ -21,16 +21,9 @@ const EmergencyBooking = () => {
 
     setIsSubmitting(true);
     try {
-      const jobId = await BookingService.createEmergencyBooking({
-        userId: user.uid,
-        serviceId: 'emergency-ac-repair',
-        subServiceId: 'emergency-ac-repair-standard',
-        location: {}, 
-        contact: { name: user.name || 'Guest', phone: 'User Phone' },
-        price: 999, 
-      });
+      const booking = await BookingService.createEmergencyBooking(user.id || user.uid);
       toast.success('Crisis intervention mission confirmed. Dispatch imminent.');
-      navigate(`/app/job-tracker/${jobId}`);
+      navigate(`/app/job-tracker/${booking.bookingId}`);
     } catch (error) {
       toast.error('Dispatch synchronization failed.');
     } finally {

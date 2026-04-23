@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { NotificationService, Notification } from '@/services/notificationService';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -24,6 +23,12 @@ export default function NotificationCentre() {
   const { user } = useAuthStore();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const groupedNotifications = notifications.reduce<Record<string, Notification[]>>((groups, notification) => {
+    const label = new Date(notification.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+    groups[label] = [...(groups[label] ?? []), notification];
+    return groups;
+  }, {});
 
   useEffect(() => {
     if (!user) return;
@@ -35,11 +40,12 @@ export default function NotificationCentre() {
   }, [user]);
 
   const markAllRead = async () => {
-    const unread = notifications.filter(n => !n.isRead);
-    await Promise.all(unread.map(n => NotificationService.markAsRead(n.id)));
+    await NotificationService.markAllRead();
+    setNotifications([]);
   };
 
-  const deleteNotification = (id: string) => {
+  const markNotificationRead = async (id: string) => {
+    await NotificationService.markAsRead(id);
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
@@ -94,62 +100,64 @@ export default function NotificationCentre() {
 
       <div className="px-8 -mt-24 space-y-8 relative z-30 pb-40">
         <AnimatePresence initial={false}>
-          {notifications.map((notif, index) => {
-            const Icon = getIcon(notif.type);
-            return (
-              <motion.div
-                key={notif.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ delay: index * 0.05 }}
-                className={cn(
-                  "bg-white rounded-[48px] p-10 border transition-all flex gap-8 relative group shadow-3xl shadow-black/[0.01] active:scale-[0.98] hover:border-gold/30",
-                  notif.isRead ? "border-navy/5 opacity-40 shadow-none" : "border-gold/20 shadow-gold/5"
-                )}
-                onClick={() => notif.link && navigate(notif.link)}
-              >
-                {!notif.isRead && (
-                  <div className="absolute top-10 right-10 w-4 h-4 rounded-full bg-gold shadow-[0_0_20px_rgba(201,162,74,1)] animate-pulse border-4 border-white" />
-                )}
-                
-                <div className={cn(
-                  "w-20 h-20 rounded-[32px] flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform duration-700",
-                  notif.type === 'success' ? "bg-green-500/10 text-green-500" :
-                  notif.type === 'warning' ? "bg-gold/10 text-gold" :
-                  notif.type === 'error' ? "bg-red-500/10 text-red-500" :
-                  "bg-navy/5 text-navy/10"
-                )}>
-                  <Icon className="w-10 h-10" />
-                </div>
+          {(Object.entries(groupedNotifications) as [string, Notification[]][]).map(([groupLabel, items]) => (
+            <div key={groupLabel} className="space-y-6">
+              <div className="px-4">
+                <p className="text-[11px] font-bold uppercase tracking-[0.5em] text-navy/20">{groupLabel}</p>
+              </div>
+              {items.map((notif, index) => {
+                const Icon = getIcon(notif.type);
+                return (
+                  <motion.div
+                    key={notif.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-white rounded-[48px] p-10 border border-gold/20 shadow-3xl shadow-black/[0.01] active:scale-[0.98] hover:border-gold/30 relative group flex gap-8"
+                    onClick={() => notif.link && navigate(notif.link)}
+                  >
+                    <div className="absolute top-10 right-10 w-4 h-4 rounded-full bg-gold shadow-[0_0_20px_rgba(201,162,74,1)] animate-pulse border-4 border-white" />
+                    
+                    <div className={cn(
+                      "w-20 h-20 rounded-[32px] flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform duration-700",
+                      notif.type === 'success' ? "bg-green-500/10 text-green-500" :
+                      notif.type === 'warning' ? "bg-gold/10 text-gold" :
+                      notif.type === 'error' ? "bg-red-500/10 text-red-500" :
+                      "bg-navy/5 text-navy/10"
+                    )}>
+                      <Icon className="w-10 h-10" />
+                    </div>
 
-                <div className="flex-1 pr-12">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-[9px] font-bold text-navy/10 uppercase tracking-[0.4em]">Signal 0x{notif.id.slice(0, 4).toUpperCase()}</span>
-                    <div className="w-1.5 h-1.5 rounded-full bg-navy/5" />
-                    <span className="text-[9px] font-bold text-gold uppercase tracking-[0.3em]">{notif.type} protocol</span>
-                  </div>
-                  <h3 className="font-display font-bold text-navy text-[22px] leading-tight mb-3 tracking-tighter uppercase italic group-hover:text-gold transition-colors">{notif.title}</h3>
-                  <p className="text-navy/40 text-[14px] font-medium leading-[1.6] mb-6 italic">{notif.message}</p>
-                  <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-[0.3em] text-navy/20">
-                    <Clock className="w-4 h-4 text-gold/30" />
-                    {notif.createdAt?.toDate ? notif.createdAt.toDate().toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }) : new Date(notif.createdAt).toLocaleString()}
-                  </div>
-                </div>
+                    <div className="flex-1 pr-12">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-[9px] font-bold text-navy/10 uppercase tracking-[0.4em]">Signal 0x{notif.id.slice(0, 4).toUpperCase()}</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-navy/5" />
+                        <span className="text-[9px] font-bold text-gold uppercase tracking-[0.3em]">{notif.type} protocol</span>
+                      </div>
+                      <h3 className="font-display font-bold text-navy text-[22px] leading-tight mb-3 tracking-tighter uppercase italic group-hover:text-gold transition-colors">{notif.title}</h3>
+                      <p className="text-navy/40 text-[14px] font-medium leading-[1.6] mb-6 italic">{notif.message}</p>
+                      <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-[0.3em] text-navy/20">
+                        <Clock className="w-4 h-4 text-gold/30" />
+                        {new Date(notif.createdAt).toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
+                      </div>
+                    </div>
 
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteNotification(notif.id);
-                  }}
-                  className="absolute bottom-10 right-10 w-14 h-14 rounded-[22px] bg-red-50 text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white active:scale-90 shadow-3xl shadow-red-500/10"
-                >
-                  <Trash2 className="w-6 h-6" />
-                </button>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gold/[0.01] rounded-bl-full pointer-events-none" />
-              </motion.div>
-            );
-          })}
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void markNotificationRead(notif.id);
+                      }}
+                      className="absolute bottom-10 right-10 w-14 h-14 rounded-[22px] bg-red-50 text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white active:scale-90 shadow-3xl shadow-red-500/10"
+                    >
+                      <Trash2 className="w-6 h-6" />
+                    </button>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gold/[0.01] rounded-bl-full pointer-events-none" />
+                  </motion.div>
+                );
+              })}
+            </div>
+          ))}
         </AnimatePresence>
 
         {notifications.length === 0 && (

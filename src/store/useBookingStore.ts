@@ -9,7 +9,9 @@ export interface BookingState {
   step: number;
   serviceId: string | null;
   subServiceId: string | null;
+  updatedAt: string | null;
   equipment: {
+    equipmentId?: number | null;
     brand: ACBrand | '';
     type: ACType | '';
     capacity: ACCapacity | '';
@@ -22,11 +24,13 @@ export interface BookingState {
     pinCode: string;
     label: 'Home' | 'Office' | 'Other';
     saveToAccount: boolean;
+    zoneId?: number | null;
   };
   slot: {
     date: string | null; // ISO date string
     timeWindow: 'Morning' | 'Afternoon' | 'Evening' | null;
     isEmergency: boolean;
+    slotAvailabilityId?: number | null;
   };
   contact: {
     fullName: string;
@@ -35,6 +39,7 @@ export interface BookingState {
     instructions: string;
     couponCode: string;
   };
+  termsAccepted: boolean;
   pricing: {
     basePrice: number;
     discount: number;
@@ -58,6 +63,7 @@ const initialState: BookingState = {
   step: 1,
   serviceId: null,
   subServiceId: null,
+  updatedAt: null,
   equipment: {
     brand: '',
     type: '',
@@ -76,6 +82,7 @@ const initialState: BookingState = {
     date: null,
     timeWindow: null,
     isEmergency: false,
+    slotAvailabilityId: null,
   },
   contact: {
     fullName: '',
@@ -84,6 +91,7 @@ const initialState: BookingState = {
     instructions: '',
     couponCode: '',
   },
+  termsAccepted: false,
   pricing: {
     basePrice: 0,
     discount: 0,
@@ -98,22 +106,26 @@ export const useBookingStore = create<BookingStore>()(
     (set) => ({
       ...initialState,
       setStep: (step) => set({ step }),
-      updateBooking: (data) => set((state) => ({ ...state, ...data, isDraft: true })),
+      updateBooking: (data) => set((state) => ({ ...state, ...data, isDraft: true, updatedAt: new Date().toISOString() })),
       updateEquipment: (equipment) => set((state) => ({ 
         equipment: { ...state.equipment, ...equipment },
-        isDraft: true 
+        isDraft: true,
+        updatedAt: new Date().toISOString(),
       })),
       updateLocation: (location) => set((state) => ({ 
         location: { ...state.location, ...location },
-        isDraft: true 
+        isDraft: true,
+        updatedAt: new Date().toISOString(),
       })),
       updateSlot: (slot) => set((state) => ({ 
         slot: { ...state.slot, ...slot },
-        isDraft: true 
+        isDraft: true,
+        updatedAt: new Date().toISOString(),
       })),
       updateContact: (contact) => set((state) => ({ 
         contact: { ...state.contact, ...contact },
-        isDraft: true 
+        isDraft: true,
+        updatedAt: new Date().toISOString(),
       })),
       resetBooking: () => set(initialState),
     }),

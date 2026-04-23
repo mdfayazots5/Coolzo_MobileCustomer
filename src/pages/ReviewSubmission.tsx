@@ -12,11 +12,12 @@ import {
   ShieldCheck,
   Target
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { JOBS, TECHNICIANS } from '@/lib/mockData';
+import { BookingService } from '@/services/bookingService';
 import { ReviewService } from '@/services/reviewService';
+import { TechnicianService, Technician } from '@/services/technicianService';
 import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
 
@@ -24,15 +25,37 @@ export default function ReviewSubmission() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const job = JOBS.find(j => j.id === id) || JOBS[0];
-  const technician = TECHNICIANS.find(t => t.id === job.technicianId);
-
+  const [booking, setBooking] = useState<any>(null);
+  const [technician, setTechnician] = useState<Technician | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [recommend, setRecommend] = useState<boolean | null>(null);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  useEffect(() => {
+    const fetchContext = async () => {
+      if (!id) return;
+
+      try {
+        const bookingDetail = await BookingService.getBookingById(id);
+        setBooking(bookingDetail);
+
+        if (bookingDetail?.assignedTechnicianId) {
+          const technicianProfile = await TechnicianService.getTechnicianById(String(bookingDetail.assignedTechnicianId));
+          setTechnician(technicianProfile);
+        }
+      } catch (error) {
+        console.error('Failed to fetch review context:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void fetchContext();
+  }, [id]);
 
   const handleSubmit = async () => {
     if (!user) {
@@ -43,14 +66,20 @@ export default function ReviewSubmission() {
       toast.error('Numeric evaluation required');
       return;
     }
+    const reviewableStatuses = ['completed', 'closed', 'submittedforclosure', 'workcompletedpendingsubmission'];
+    const operationalStatus = (booking?.operationalStatus || booking?.status || '').replace(/\s+/g, '').toLowerCase();
+
+    if (!reviewableStatuses.includes(operationalStatus)) {
+      toast.error('Review submission opens after service completion');
+      return;
+    }
     setIsSubmitting(true);
     try {
       await ReviewService.submitReview(user.uid, {
         rating,
         comment,
-        jobId: id,
-        userName: user.name || 'Anonymous Operative',
-        userPhoto: user.photoURL || undefined,
+        bookingId: id ? Number(id) : undefined,
+        customerPhotoUrl: user.photoURL || undefined,
       });
       setShowSuccess(true);
     } catch (error) {
@@ -60,6 +89,14 @@ export default function ReviewSubmission() {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-warm-white items-center justify-center">
+        <Loader2 className="w-16 h-16 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   if (showSuccess) {
     return (
@@ -125,8 +162,8 @@ export default function ReviewSubmission() {
 
         {/* Target Context Terminal */}
         <div className="bg-white/5 backdrop-blur-2xl rounded-[40px] p-8 border border-white/10 flex items-center gap-8 relative z-10 shadow-3xl group active:scale-[0.99] transition-all">
-          <div className="w-20 h-20 rounded-[28px] bg-gold/10 overflow-hidden border border-gold/20 shadow-inner shrink-0 rotate-3 group-hover:rotate-0 transition-transform duration-700">
-            <img src={technician?.photo} alt={technician?.name} className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-700" referrerPolicy="no-referrer" />
+            <div className="w-20 h-20 rounded-[28px] bg-gold/10 overflow-hidden border border-gold/20 shadow-inner shrink-0 rotate-3 group-hover:rotate-0 transition-transform duration-700">
+            <img src={technician?.photoUrl} alt={technician?.name} className="w-full h-full object-cover scale-110 group-hover:scale-100 transition-transform duration-700" referrerPolicy="no-referrer" />
           </div>
           <div>
             <div className="flex items-center gap-4 mb-2">
@@ -134,9 +171,18 @@ export default function ReviewSubmission() {
                <h3 className="font-display font-bold text-[24px] text-gold tracking-tighter italic uppercase">{technician?.name}</h3>
             </div>
             <p className="text-[11px] font-bold uppercase tracking-[0.4em] text-white/20">
-              {job.serviceType} • {new Date(job.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+              {booking?.serviceName || 'Service'} • {booking?.slotDate ? new Date(booking.slotDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'Completed visit'}
             </p>
           </div>
+          {technician && (
+            <Button
+              variant="ghost"
+              className="ml-auto border border-gold/20 bg-gold/10 text-gold hover:bg-gold hover:text-navy"
+              onClick={() => navigate(`/technician/${technician.id}`)}
+            >
+              View Profile
+            </Button>
+          )}
           <div className="absolute top-0 right-0 w-32 h-32 bg-gold/[0.02] rounded-bl-full pointer-events-none" />
         </div>
 

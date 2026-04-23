@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { TECHNICIANS, Technician } from '@/lib/mockData';
 import { cn } from '@/lib/utils';
 
 const STATUS_STEPS = [
@@ -32,7 +31,7 @@ export default function JobTracker() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [job, setJob] = useState<any | undefined>(null);
-  const [technician, setTechnician] = useState<Technician | undefined>(undefined);
+  const [technician, setTechnician] = useState<any | undefined>(undefined);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -43,10 +42,7 @@ export default function JobTracker() {
       if (jobData) {
         setJob(jobData);
         setLastUpdated(new Date());
-        
-        if (jobData.technicianId) {
-          setTechnician(TECHNICIANS.find(t => t.id === jobData.technicianId));
-        }
+        setTechnician(jobData.technician);
       }
     });
 
@@ -118,7 +114,7 @@ export default function JobTracker() {
       </div>
 
       {/* Cinematic ETA Banner */}
-      {job.status === 'En Route' && (
+        {job.status === 'En Route' && (
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -237,7 +233,7 @@ export default function JobTracker() {
               <div className="relative z-10 flex items-center justify-between gap-8">
                 <div className="flex items-center gap-10">
                   <div className="w-24 h-24 rounded-[36px] bg-gold/10 border-2 border-gold/30 flex items-center justify-center overflow-hidden shadow-2xl group-hover:scale-105 transition-transform duration-1000">
-                    <img src={technician.photo} alt={technician.name} className="w-full h-full object-cover" />
+                    <img src={technician.photoUrl} alt={technician.name} className="w-full h-full object-cover" />
                   </div>
                   <div className="space-y-3">
                     <div className="space-y-1">
@@ -249,11 +245,11 @@ export default function JobTracker() {
                         </div>
                       </div>
                     </div>
-                    <p className="text-warm-white/20 text-[11px] font-bold uppercase tracking-[0.4em] italic leading-none">{technician.experience} Professional Tenure</p>
+                    <p className="text-warm-white/20 text-[11px] font-bold uppercase tracking-[0.4em] italic leading-none">Verified Professional</p>
                   </div>
                 </div>
-                <a 
-                  href={`tel:${technician.phone}`}
+                    <a 
+                  href="#"
                   className="w-20 h-20 rounded-[32px] bg-gold flex items-center justify-center text-navy shadow-3xl shadow-gold/40 active:scale-90 transition-all hover:scale-110"
                 >
                   <Phone className="w-10 h-10" />
@@ -262,15 +258,13 @@ export default function JobTracker() {
 
               <div className="mt-12 pt-10 border-t border-white/5 flex items-center justify-between relative z-10">
                 <div className="flex gap-4">
-                  {technician.certifications.slice(0, 1).map((cert, i) => (
-                    <div key={i} className="bg-white/5 px-6 py-2.5 rounded-full border border-white/5 flex items-center gap-4 shadow-inner">
-                      <ShieldCheck className="w-5 h-5 text-gold" />
-                      <span className="text-[10px] font-bold text-warm-white/30 uppercase tracking-[0.4em] italic">{cert}</span>
-                    </div>
-                  ))}
+                  <div className="bg-white/5 px-6 py-2.5 rounded-full border border-white/5 flex items-center gap-4 shadow-inner">
+                    <ShieldCheck className="w-5 h-5 text-gold" />
+                    <span className="text-[10px] font-bold text-warm-white/30 uppercase tracking-[0.4em] italic">Assigned Technician</span>
+                  </div>
                 </div>
                 <button 
-                  onClick={() => navigate(`/app/technician-profile/${technician.id}`)}
+                  onClick={() => navigate(`/technician/${technician.technicianId}`)}
                   className="text-[10px] font-bold uppercase tracking-[0.5em] text-gold/30 hover:text-gold flex items-center gap-4 transition-all group/btn italic"
                 >
                   Profile Archive <ChevronRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
@@ -284,7 +278,7 @@ export default function JobTracker() {
         )}
 
         {/* Fiscal Divergence Alert */}
-        {job.hasEstimate && !job.estimateApproved && (
+        {job.estimateStatus === 'PendingApproval' && (
           <motion.div 
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -298,7 +292,7 @@ export default function JobTracker() {
               <p className="text-[11px] opacity-70 font-bold uppercase tracking-[0.4em] italic">Estimate Pending Authorization</p>
             </div>
             <Button 
-              onClick={() => navigate(`/app/estimate-approval/${job.id}`)}
+              onClick={() => navigate(`/estimate-approval/${job.id}`)}
               className="bg-white text-red-500 hover:bg-navy hover:text-gold font-bold rounded-[24px] h-16 px-10 text-[13px] uppercase tracking-[0.3em] shadow-2xl active:scale-95 transition-all italic"
             >
               Analyze

@@ -1,5 +1,5 @@
 import { AuthService } from '@/services/authService';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, 
@@ -29,6 +29,17 @@ const Profile = () => {
   const [phone, setPhone] = useState(user?.phone || '');
   const [isSaving, setIsSaving] = useState(false);
 
+  useEffect(() => {
+    void AuthService.getProfile()
+      .then((profile) => {
+        setUser(profile);
+        setName(profile.name);
+        setEmail(profile.email);
+        setPhone(profile.phone);
+      })
+      .catch(() => undefined);
+  }, [setUser]);
+
   const handleSave = async () => {
     if (!user) return;
     
@@ -36,13 +47,26 @@ const Profile = () => {
     try {
       const updatedData = {
         name,
+        email,
         phone,
       };
-      
-      await AuthService.updateProfile(user.uid, updatedData);
-      
-      setUser({ ...user, ...updatedData });
-      toast.success('Identity synchronized successfully');
+
+      if (phone !== user.phone) {
+        await AuthService.loginWithPhone(phone);
+        navigate('/otp', {
+          state: {
+            phone,
+            displayPhone: `+91 ${phone}`,
+            mode: 'profile-update',
+            pendingProfile: updatedData,
+          },
+        });
+        toast.success('Verify the new phone number to complete the profile update');
+      } else {
+        const profile = await AuthService.updateProfile(user.uid, updatedData);
+        setUser(profile);
+        toast.success('Identity synchronized successfully');
+      }
     } catch (error) {
       console.error('Profile update failed:', error);
       toast.error('Identity synchronization sequence failed');

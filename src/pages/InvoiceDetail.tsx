@@ -10,17 +10,27 @@ import {
   ShieldCheck,
   Loader2
 } from 'lucide-react';
-import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { PaymentService, Invoice } from '@/services/paymentService';
+import { toast } from 'sonner';
 
 const InvoiceDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const handleDownload = async () => {
+    if (!invoice) return;
+
+    try {
+      await PaymentService.downloadInvoicePdf(invoice.id);
+    } catch (error) {
+      toast.error('Unable to export invoice PDF');
+    }
+  };
 
   useEffect(() => {
     const fetchInvoice = async () => {
@@ -132,16 +142,13 @@ const InvoiceDetail = () => {
               <p className="text-[20px] font-bold text-navy font-mono tracking-tighter italic">{invoice.invoiceNumber}</p>
             </div>
             <div className="text-right space-y-3">
-              <p className="text-[11px] font-bold uppercase tracking-[0.5em] text-navy/20">Deployment Link</p>
-              <button 
-                onClick={() => navigate(`/app/job/${invoice.jobId}`)}
-                className="text-[20px] font-bold text-gold flex items-center justify-end gap-4 ml-auto active:scale-95 transition-all group/link"
-              >
+              <p className="text-[11px] font-bold uppercase tracking-[0.5em] text-navy/20">Quotation Link</p>
+              <div className="text-[20px] font-bold text-gold flex items-center justify-end gap-4 ml-auto">
                 {invoice.jobId}
-                <div className="w-10 h-10 rounded-full bg-gold/5 flex items-center justify-center group-hover/link:bg-gold group-hover/link:text-navy transition-colors">
+                <div className="w-10 h-10 rounded-full bg-gold/5 flex items-center justify-center text-navy/20">
                   <ExternalLink className="w-5 h-5" />
                 </div>
-              </button>
+              </div>
             </div>
             <div className="space-y-3">
               <p className="text-[11px] font-bold uppercase tracking-[0.5em] text-navy/20">Archived Date</p>
@@ -165,12 +172,12 @@ const InvoiceDetail = () => {
             {invoice.items.map((item, i) => (
               <div key={i} className="flex justify-between items-start gap-12 group">
                 <div className="flex-1 space-y-3">
-                  <p className="text-[20px] font-bold text-navy leading-none tracking-tight group-hover:text-gold transition-colors italic uppercase">{item.description}</p>
-                  <div className="flex items-center gap-4">
-                    <div className="h-px w-8 bg-gold/40" />
-                    <p className="text-[11px] text-navy/30 font-bold uppercase tracking-[0.4em]">Unit Logistics • Qty 01</p>
+                    <p className="text-[20px] font-bold text-navy leading-none tracking-tight group-hover:text-gold transition-colors italic uppercase">{item.description}</p>
+                    <div className="flex items-center gap-4">
+                      <div className="h-px w-8 bg-gold/40" />
+                      <p className="text-[11px] text-navy/30 font-bold uppercase tracking-[0.4em]">Unit Logistics • Qty {item.quantity || 1}</p>
+                    </div>
                   </div>
-                </div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-[16px] font-display font-bold text-navy/20 italic">₹</span>
                   <p className="text-[24px] font-display font-bold text-navy tracking-tight">{item.amount.toLocaleString()}</p>
@@ -183,7 +190,21 @@ const InvoiceDetail = () => {
                 <p className="text-[14px] font-bold text-navy uppercase tracking-[0.5em]">Taxable Subtotal</p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-[12px] font-display font-bold italic">₹</span>
-                  <p className="text-[18px] font-bold text-navy font-mono">{(invoice.total - invoice.tax).toLocaleString()}</p>
+                  <p className="text-[18px] font-bold text-navy font-mono">{Number(invoice.subTotal || invoice.total - invoice.tax).toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="flex justify-between items-center opacity-40">
+                <p className="text-[14px] font-bold text-navy uppercase tracking-[0.5em]">Amount Paid</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[12px] font-display font-bold italic">₹</span>
+                  <p className="text-[18px] font-bold text-navy font-mono">{Number(invoice.paidAmount || 0).toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="flex justify-between items-center opacity-40">
+                <p className="text-[14px] font-bold text-navy uppercase tracking-[0.5em]">Outstanding</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[12px] font-display font-bold italic">₹</span>
+                  <p className="text-[18px] font-bold text-navy font-mono">{Number(invoice.balanceAmount || 0).toLocaleString()}</p>
                 </div>
               </div>
               <div className="flex justify-between items-center opacity-40">
@@ -228,6 +249,7 @@ const InvoiceDetail = () => {
         <Button 
           variant="outline" 
           className="w-full h-24 rounded-[44px] border-navy/5 bg-white text-navy/20 font-bold gap-8 text-[16px] uppercase tracking-[0.5em] hover:bg-navy/5 active:scale-[0.98] transition-all group overflow-hidden shadow-3xl shadow-black/[0.01]"
+          onClick={handleDownload}
         >
           <Download className="w-8 h-8 opacity-20 group-hover:scale-125 transition-transform group-hover:text-gold" />
           <span className="group-hover:text-navy transition-colors uppercase tracking-[0.6em]">Export PDF Artifact</span>

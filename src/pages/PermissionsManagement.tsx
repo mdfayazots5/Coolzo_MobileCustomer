@@ -1,13 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, 
   MapPin, 
   Bell, 
-  Camera, 
-  Image as ImageIcon,
   ShieldCheck,
-  ChevronRight,
   Info,
   Loader2
 } from 'lucide-react';
@@ -15,34 +12,138 @@ import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { NotificationService, NotificationPreferences } from '@/services/notificationService';
+import { useAuthStore } from '@/store/useAuthStore';
 import { toast } from 'sonner';
+
+const PERMISSIONS_STORAGE_KEY = 'coolzo-device-permissions';
+
+type PermissionStatusValue = 'Granted' | 'Denied' | 'Not Requested';
+
+interface LocalPermissionState {
+  location: PermissionStatusValue;
+  push: PermissionStatusValue;
+}
 
 const PermissionsManagement = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
-  const [perms, setPerms] = useState([
+  const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
+  const [permissionState, setPermissionState] = useState<LocalPermissionState>({
+    location: 'Not Requested',
+    push: 'Not Requested',
+  });
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(PERMISSIONS_STORAGE_KEY);
+
+    if (!stored) {
+      return;
+    }
+
+    try {
+      setPermissionState(JSON.parse(stored) as LocalPermissionState);
+    } catch {
+      window.localStorage.removeItem(PERMISSIONS_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (!user) {
+        return;
+      }
+
+      try {
+        setPrefs(await NotificationService.getPreferences(user.uid));
+      } catch {
+        setPrefs({
+          push: false,
+          email: true,
+          sms: false,
+          whatsapp: true,
+          offers: true,
+          updates: true,
+        });
+      }
+    };
+
+    void loadPreferences();
+  }, [user]);
+
+  const persistPermissionState = (nextState: LocalPermissionState) => {
+    setPermissionState(nextState);
+    window.localStorage.setItem(PERMISSIONS_STORAGE_KEY, JSON.stringify(nextState));
+  };
+
+  const perms = [
     { 
       id: 'location', 
       icon: MapPin, 
       label: 'Location Services', 
       desc: 'Essential for precise service delivery and real-time technician tracking to your doorstep.',
-      status: 'Granted'
+      status: permissionState.location,
     },
     { 
       id: 'push', 
       icon: Bell, 
       label: 'Push Notifications', 
       desc: 'Receive exclusive updates on your service status, premium offers, and priority support.',
-      status: 'Granted'
+      status: permissionState.push,
     }
-  ]);
+  ];
 
   const handleEnable = async (id: string) => {
     setIsUpdating(id);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setPerms(perms.map(p => p.id === id ? { ...p, status: 'Granted' } : p));
-    setIsUpdating(null);
-    toast.success('Access granted successfully');
+    try {
+      if (id === 'location') {
+        if (!navigator.geolocation) {
+          throw new Error('Location services are not supported on this device.');
+        }
+
+        await new Promise<void>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            () => resolve(),
+            () => reject(new Error('Location access denied')),
+          );
+        });
+
+        persistPermissionState({ ...permissionState, location: 'Granted' });
+        toast.success('Location access granted');
+        return;
+      }
+
+      if (id === 'push') {
+        if (!prefs || !user) {
+          throw new Error('Notification preferences are unavailable.');
+        }
+
+        if (typeof Notification === 'undefined') {
+          throw new Error('Push notifications are not supported on this device.');
+        }
+
+        const permission = await Notification.requestPermission();
+
+        if (permission !== 'granted') {
+          persistPermissionState({ ...permissionState, push: 'Denied' });
+          throw new Error('Notification access denied');
+        }
+
+        await NotificationService.updatePreferences(user.uid, {
+          ...prefs,
+          push: true,
+        });
+
+        setPrefs({ ...prefs, push: true });
+        persistPermissionState({ ...permissionState, push: 'Granted' });
+        toast.success('Push access granted');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to update permission');
+    } finally {
+      setIsUpdating(null);
+    }
   };
 
   return (

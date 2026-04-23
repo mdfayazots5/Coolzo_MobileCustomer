@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
+import { BookingService } from '@/services/bookingService';
 import { useBookingStore } from '@/store/useBookingStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { cn } from '@/lib/utils';
@@ -15,13 +16,28 @@ export default function Step5Contact() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponApplied, setCouponApplied] = useState(false);
 
-  const handleApplyCoupon = () => {
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      updateContact({
+        fullName: contact.fullName || user.name,
+        mobile: contact.mobile || user.phone,
+        email: contact.email || user.email,
+      });
+    }
+  }, [contact.email, contact.fullName, contact.mobile, isAuthenticated, updateContact, user]);
+
+  const handleApplyCoupon = async () => {
     if (!contact.couponCode) return;
     setCouponLoading(true);
-    setTimeout(() => {
-      setCouponLoading(false);
+
+    try {
+      await BookingService.validateCoupon(contact.couponCode);
       setCouponApplied(true);
-    }, 1000);
+    } catch {
+      setCouponApplied(false);
+    } finally {
+      setCouponLoading(false);
+    }
   };
 
   return (

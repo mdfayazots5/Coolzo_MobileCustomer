@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Download, Share2, Printer, CheckCircle2, ShieldCheck, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PaymentService } from '@/services/paymentService';
+import { toast } from 'sonner';
 
 const ReceiptView = () => {
   const { id } = useParams();
@@ -42,6 +43,14 @@ const ReceiptView = () => {
     );
   }
 
+  const handleDownload = async () => {
+    try {
+      await PaymentService.downloadReceiptPdf(id!);
+    } catch (error) {
+      toast.error('Failed to download receipt PDF.');
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-warm-white pb-32">
       {/* Header */}
@@ -63,7 +72,7 @@ const ReceiptView = () => {
             <button className="w-11 h-11 rounded-2xl bg-navy/5 flex items-center justify-center text-navy/20 active:scale-90 transition-transform hover:bg-gold hover:text-navy shadow-inner">
               <Share2 className="w-5 h-5" />
             </button>
-            <button className="w-11 h-11 rounded-2xl bg-gold text-navy flex items-center justify-center shadow-2xl shadow-gold/20 active:scale-90 transition-transform">
+            <button onClick={() => void handleDownload()} className="w-11 h-11 rounded-2xl bg-gold text-navy flex items-center justify-center shadow-2xl shadow-gold/20 active:scale-90 transition-transform">
               <Download className="w-5 h-5" />
             </button>
           </div>
@@ -114,7 +123,7 @@ const ReceiptView = () => {
               </div>
               <div className="space-y-1.5">
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-navy/20">Deployment Unit</p>
-                <p className="text-[15px] font-bold text-navy">Service Ref #{receipt.jobId}</p>
+                <p className="text-[15px] font-bold text-navy">Service Ref #{receipt.jobId || receipt.invoiceId}</p>
               </div>
               <div className="text-right space-y-1.5">
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-navy/20">Protocol Hash</p>

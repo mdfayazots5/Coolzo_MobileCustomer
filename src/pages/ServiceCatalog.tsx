@@ -116,7 +116,7 @@ export default function ServiceCatalog() {
               animate={{ opacity: 1, y: 0, transition: { delay: i * 0.05 + 0.2 } }}
               exit={{ opacity: 0, scale: 0.9 }}
               className="bg-white rounded-[72px] overflow-hidden border border-navy/5 shadow-3xl shadow-black/[0.01] group active:scale-[0.99] transition-all cursor-pointer relative hover:border-gold/30 hover:shadow-3xl"
-              onClick={() => navigate(`/app/service/${service.id}`)}
+              onClick={() => navigate(`/service/${service.id}`)}
             >
               <div className="aspect-[21/9] w-full overflow-hidden relative shadow-inner">
                 <img 

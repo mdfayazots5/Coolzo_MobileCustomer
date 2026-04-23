@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button';
 import { motion } from 'motion/react';
 import { BookingService } from '@/services/bookingService';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useBookingStore } from '@/store/useBookingStore';
 
 const BookingDraftResume = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const resetBooking = useBookingStore((state) => state.resetBooking);
   const [draft, setDraft] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -78,7 +80,7 @@ const BookingDraftResume = () => {
           </div>
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-navy/40">Last saved</p>
-            <p className="text-xs font-bold text-navy">{new Date(draft.createdAt).toLocaleDateString()}</p>
+            <p className="text-xs font-bold text-navy">{new Date(draft.updatedAt).toLocaleDateString()}</p>
           </div>
         </div>
 
@@ -93,7 +95,10 @@ const BookingDraftResume = () => {
           <Button 
             variant="ghost"
             className="w-full h-14 rounded-2xl text-red-500 font-bold"
-            onClick={() => navigate(-1)}
+            onClick={() => {
+              resetBooking();
+              navigate(-1);
+            }}
           >
             Discard Draft
           </Button>

@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { AuthService } from '@/services/authService';
 import { useAuthStore } from '@/store/useAuthStore';
-import { MOCK_USERS } from '@/lib/mockData';
 import { toast } from 'sonner';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 
 const Register = () => {
@@ -17,32 +17,44 @@ const Register = () => {
   const [step, setStep] = useState<'details' | 'otp'>('details');
   const [isLoading, setIsLoading] = useState(false);
   const [otpValue, setOtpValue] = useState('');
+  const [form, setForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    password: '',
+  });
 
-  const handleSendOTP = (e: React.FormEvent) => {
+  const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
+
+    try {
+      await AuthService.register(form);
+      await AuthService.loginWithPhone(form.phone);
       setStep('otp');
-      setIsLoading(false);
       toast.info('Transmission successful. Check signals (OTP)');
-    }, 1500);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Registration failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleVerifyOTP = (value: string) => {
+  const handleVerifyOTP = async (value: string) => {
     setOtpValue(value);
     if (value.length === 6) {
       setIsLoading(true);
-      setTimeout(() => {
-        if (value === '123456') {
-          setUser(MOCK_USERS[0] as any);
+      try {
+        const user = await AuthService.verifyOTP(form.phone, value);
+        setUser(user);
           toast.success('Patron account successfully initialized');
           navigate('/app');
-        } else {
-          toast.error('Identity verification failed. Protocol 123456 required.');
-          setOtpValue('');
-        }
+      } catch (error) {
+        toast.error('Identity verification failed.');
+        setOtpValue('');
+      } finally {
         setIsLoading(false);
-      }, 1500);
+      }
     }
   };
 
@@ -89,6 +101,8 @@ const Register = () => {
                     id="name" 
                     placeholder="Full Name Registry" 
                     className="h-20 px-8 rounded-[32px] border-navy/5 bg-navy/[0.02] focus:bg-white focus:ring-2 focus:ring-gold/30 text-[17px] font-bold text-navy shadow-inner focus:shadow-2xl transition-all"
+                    value={form.name}
+                    onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))}
                     required
                   />
                 </div>
@@ -101,6 +115,8 @@ const Register = () => {
                       type="tel" 
                       placeholder="98765 43210" 
                       className="pl-20 h-20 rounded-[32px] border-navy/5 bg-navy/[0.02] focus:bg-white focus:ring-2 focus:ring-gold/30 text-[17px] font-bold text-navy shadow-inner focus:shadow-2xl transition-all"
+                      value={form.phone}
+                      onChange={(e) => setForm((current) => ({ ...current, phone: e.target.value }))}
                       required
                     />
                   </div>
@@ -112,6 +128,8 @@ const Register = () => {
                     type="email" 
                     placeholder="name@executive.com" 
                     className="h-20 px-8 rounded-[32px] border-navy/5 bg-navy/[0.02] focus:bg-white focus:ring-2 focus:ring-gold/30 text-[17px] font-bold text-navy shadow-inner focus:shadow-2xl transition-all"
+                    value={form.email}
+                    onChange={(e) => setForm((current) => ({ ...current, email: e.target.value }))}
                     required
                   />
                 </div>
@@ -122,6 +140,8 @@ const Register = () => {
                     type="password" 
                     placeholder="••••••••" 
                     className="h-20 px-8 rounded-[32px] border-navy/5 bg-navy/[0.02] focus:bg-white focus:ring-2 focus:ring-gold/30 text-[17px] font-bold text-navy shadow-inner focus:shadow-2xl transition-all"
+                    value={form.password}
+                    onChange={(e) => setForm((current) => ({ ...current, password: e.target.value }))}
                     required
                   />
                 </div>
@@ -172,7 +192,14 @@ const Register = () => {
                 <div className="space-y-6">
                   <p className="text-[12px] text-navy/40 font-bold uppercase tracking-[0.2em]">
                     Signal Lost?{' '}
-                    <button className="text-gold font-bold hover:underline">Resend Cipher (30s)</button>
+                    <button
+                      className="text-gold font-bold hover:underline"
+                      onClick={() => {
+                        void AuthService.loginWithPhone(form.phone);
+                      }}
+                    >
+                      Resend Cipher (30s)
+                    </button>
                   </p>
                   
                   {isLoading && (

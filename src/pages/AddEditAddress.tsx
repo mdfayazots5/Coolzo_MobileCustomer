@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { AddressService, Address } from '@/services/addressService';
 import { useAuthStore } from '@/store/useAuthStore';
-import EmptyState from '@/components/EmptyState';
 import { cn } from '@/lib/utils';
 import { motion } from 'motion/react';
 
@@ -16,6 +15,9 @@ const AddEditAddress = () => {
   const { user } = useAuthStore();
   const isEdit = !!id;
   const [isLoading, setIsLoading] = useState(isEdit);
+  const [isCheckingZone, setIsCheckingZone] = useState(false);
+  const [zoneError, setZoneError] = useState('');
+  const [zoneLabel, setZoneLabel] = useState('');
 
   const [formData, setFormData] = useState<Partial<Address>>({
     label: '',
@@ -45,10 +47,59 @@ const AddEditAddress = () => {
     if (isEdit) fetchAddress();
   }, [id, user, isEdit]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const lookupZone = async () => {
+      const pin = formData.pinCode?.trim() ?? '';
+
+      if (pin.length < 6) {
+        setZoneError('');
+        setZoneLabel('');
+        return;
+      }
+
+      setIsCheckingZone(true);
+      const zone = await AddressService.lookupZone(pin);
+
+      if (cancelled) {
+        return;
+      }
+
+      if (!zone) {
+        setZoneLabel('');
+        setZoneError('Selected PIN is currently outside the active service zone.');
+        setFormData((current) => ({ ...current, zoneId: null }));
+      } else {
+        setZoneError('');
+        setZoneLabel(`${zone.zoneName} • ${zone.cityName}`);
+        setFormData((current) => ({
+          ...current,
+          city: zone.cityName,
+          zoneId: zone.zoneId,
+          pinCode: zone.pincode,
+        }));
+      }
+
+      setIsCheckingZone(false);
+    };
+
+    void lookupZone();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.pinCode]);
+
   const handleSave = async () => {
     if (!user) return;
     if (!formData.label || !formData.addressLine1 || !formData.pinCode) {
       toast.error('Identification gap detected. Complete all required fields.');
+      return;
+    }
+
+    if (!formData.zoneId) {
+      toast.error('Active service zone validation is required before saving this address.');
       return;
     }
     
@@ -161,7 +212,7 @@ const AddEditAddress = () => {
           <div className="grid grid-cols-2 gap-8">
             <div className="space-y-6">
               <label className="text-[12px] font-bold uppercase tracking-[0.6em] text-navy/20 ml-8 italic">Operational City</label>
-              <div className="relative group grayscale opacity-40">
+              <div className="relative group">
                 <Input 
                   value={formData.city}
                   disabled
@@ -178,6 +229,15 @@ const AddEditAddress = () => {
                 onChange={(e) => setFormData({...formData, pinCode: e.target.value})}
                 className="h-24 rounded-[48px] border-navy/5 bg-white px-10 font-display font-bold text-[20px] focus-visible:ring-gold/30 transition-all shadow-3xl shadow-black/[0.01] uppercase tracking-tighter"
               />
+              {isCheckingZone && (
+                <p className="px-6 text-[10px] font-bold uppercase tracking-[0.4em] text-navy/20">Validating zone availability...</p>
+              )}
+              {!isCheckingZone && zoneLabel && (
+                <p className="px-6 text-[10px] font-bold uppercase tracking-[0.3em] text-gold">{zoneLabel}</p>
+              )}
+              {!isCheckingZone && zoneError && (
+                <p className="px-6 text-[10px] font-bold uppercase tracking-[0.3em] text-red-500">{zoneError}</p>
+              )}
             </div>
           </div>
 

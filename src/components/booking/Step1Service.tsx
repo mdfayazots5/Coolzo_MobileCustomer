@@ -1,21 +1,31 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Check, ChevronRight, Wrench, Droplets, PlusCircle, Gauge, ShieldCheck, Zap } from 'lucide-react';
-import { SERVICES } from '@/lib/mockData';
+import { CatalogService, CatalogServiceItem } from '@/services/catalogService';
 import { useBookingStore } from '@/store/useBookingStore';
 import { cn } from '@/lib/utils';
 
 export default function Step1Service() {
   const { serviceId, subServiceId, updateBooking } = useBookingStore();
+  const [services, setServices] = useState<CatalogServiceItem[]>([]);
 
-  const selectedService = SERVICES.find(s => s.id === serviceId);
+  useEffect(() => {
+    void CatalogService.getServices().then(setServices).catch(() => setServices([]));
+  }, []);
 
-  const getServiceIcon = (category: string) => {
-    switch (category) {
+  const selectedService = services.find(s => s.id === serviceId);
+
+  const getServiceIcon = (iconKey: string, category: string) => {
+    switch (iconKey || category) {
+      case 'repair':
       case 'Repair': return Wrench;
+      case 'cleaning':
       case 'Cleaning': return Droplets;
+      case 'installation':
       case 'Installation': return PlusCircle;
+      case 'gas-refill':
       case 'Gas Refill': return Gauge;
+      case 'amc':
       case 'AMC': return ShieldCheck;
       default: return Zap;
     }
@@ -29,13 +39,13 @@ export default function Step1Service() {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        {SERVICES.map((service) => {
-          const Icon = getServiceIcon(service.category);
+        {services.map((service) => {
+          const Icon = getServiceIcon(service.iconKey, service.category);
           return (
             <motion.button
               key={service.id}
               whileTap={{ scale: 0.95 }}
-              onClick={() => updateBooking({ serviceId: service.id, subServiceId: null })}
+              onClick={() => updateBooking({ serviceId: service.id, subServiceId: 'standard' })}
               className={cn(
                 "p-4 rounded-[24px] border-2 text-left transition-all duration-300 flex flex-col gap-3 relative overflow-hidden",
                 serviceId === service.id 
@@ -72,27 +82,10 @@ export default function Step1Service() {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-4 pt-4"
         >
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-navy/40 px-2">Select Specific Issue</h3>
-          <div className="space-y-2">
-            {['General Checkup', 'Cooling Issue', 'Water Leakage', 'Noise Problem', 'Gas Refill'].map((sub) => (
-              <button
-                key={sub}
-                onClick={() => updateBooking({ subServiceId: sub })}
-                className={cn(
-                  "w-full p-4 rounded-2xl border flex items-center justify-between transition-all",
-                  subServiceId === sub 
-                    ? "border-gold bg-gold/5 text-navy" 
-                    : "border-navy/5 bg-white text-navy/60 hover:border-navy/10"
-                )}
-              >
-                <span className="text-sm font-bold">{sub}</span>
-                {subServiceId === sub ? (
-                  <Check className="w-4 h-4 text-gold" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 opacity-20" />
-                )}
-              </button>
-            ))}
+          <h3 className="text-[10px] font-bold uppercase tracking-widest text-navy/40 px-2">Selected Service</h3>
+          <div className="w-full p-4 rounded-2xl border border-gold bg-gold/5 text-navy flex items-center justify-between">
+            <span className="text-sm font-bold">{selectedService.name}</span>
+            <Check className="w-4 h-4 text-gold" />
           </div>
         </motion.div>
       )}

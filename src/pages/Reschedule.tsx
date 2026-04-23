@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Calendar, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ const Reschedule = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
+  const [availableSlots, setAvailableSlots] = useState<{ date: string; label: string }[]>([]);
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -30,20 +31,49 @@ const Reschedule = () => {
     fetchJob();
   }, [id]);
 
-  const dates = [
-    { day: 'Mon', date: '12', full: '2026-04-12' },
-    { day: 'Tue', date: '13', full: '2026-04-13' },
-    { day: 'Wed', date: '14', full: '2026-04-14' },
-    { day: 'Thu', date: '15', full: '2026-04-15' },
-    { day: 'Fri', date: '16', full: '2026-04-16' }
-  ];
+  const dates = useMemo(() => (
+    Array.from({ length: 5 }, (_, index) => {
+      const date = new Date();
+      date.setDate(date.getDate() + index + 1);
 
-  const times = [
-    '09:00 AM - 11:00 AM',
-    '11:00 AM - 01:00 PM',
-    '02:00 PM - 04:00 PM',
-    '04:00 PM - 06:00 PM'
-  ];
+      return {
+        day: date.toLocaleDateString('en-IN', { weekday: 'short' }),
+        date: date.toLocaleDateString('en-IN', { day: '2-digit' }),
+        full: date.toISOString().slice(0, 10),
+      };
+    })
+  ), []);
+
+  useEffect(() => {
+    const fetchSlots = async () => {
+      const persistedRaw = localStorage.getItem('coolzo-booking-draft');
+      const persisted = persistedRaw
+        ? JSON.parse(persistedRaw) as { state?: { location?: { zoneId?: number | null } } }
+        : null;
+      const zoneId = persisted?.state?.location?.zoneId ?? null;
+
+      if (!zoneId || !selectedDate) {
+        setAvailableSlots([]);
+        return;
+      }
+
+      try {
+        const slots = await BookingService.getSlots(zoneId, selectedDate);
+        setAvailableSlots(
+          slots
+            .filter((slot) => slot.isAvailable)
+            .map((slot) => ({ date: slot.slotDate, label: slot.slotLabel }))
+        );
+      } catch {
+        setAvailableSlots([]);
+      }
+    };
+
+    setSelectedTime('');
+    void fetchSlots();
+  }, [selectedDate]);
+
+  const times = availableSlots.map((slot) => slot.label);
 
   const handleReschedule = async () => {
     if (!selectedDate || !selectedTime) {
@@ -53,7 +83,11 @@ const Reschedule = () => {
     
     setIsSubmitting(true);
     try {
-      await BookingService.rescheduleBooking(id!, { date: selectedDate, time: selectedTime });
+      await BookingService.rescheduleBooking(id!, {
+        requestedDate: selectedDate,
+        timeWindow: selectedTime,
+        reason: `Requested from customer app for booking ${job?.bookingReference || id}`,
+      });
       toast.success('Booking Rescheduled Successfully');
       navigate(-1);
     } catch (error) {
@@ -136,6 +170,11 @@ const Reschedule = () => {
                 <span className="text-[14px] font-bold uppercase tracking-widest">{t}</span>
               </button>
             ))}
+            {selectedDate && times.length === 0 && (
+              <div className="w-full p-4 rounded-xl border bg-white text-navy/40 text-[12px] font-bold">
+                No slots are currently available for the selected date.
+              </div>
+            )}
           </div>
         </div>
 

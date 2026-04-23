@@ -1,26 +1,52 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AuthService } from '@/services/authService';
 import { toast } from 'sonner';
 import { ArrowLeft, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const phone = location.state?.phone || '';
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!phone) {
+      toast.error('Reset session expired. Start again.');
+      navigate('/forgot-password');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    if (password.length < 8 || !/\d/.test(password)) {
+      toast.error('Password must be at least 8 characters and include a digit');
+      return;
+    }
+
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      await AuthService.resetPassword(phone, otp, password);
       setIsSuccess(true);
-      setIsLoading(false);
       toast.success('Password reset successfully');
-    }, 1500);
+    } catch (error) {
+      toast.error('Failed to reset password');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -43,10 +69,23 @@ export default function ResetPassword() {
           >
             <div>
               <h1 className="text-3xl font-display font-bold text-navy mb-2">Reset Password</h1>
-              <p className="text-navy/60">Create a new secure password for your account.</p>
+              <p className="text-navy/60">Enter the OTP sent to {phone || 'your mobile number'} and create a new secure password.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="otp">OTP</Label>
+                <Input
+                  id="otp"
+                  type="text"
+                  value={otp}
+                  onChange={(event) => setOtp(event.target.value)}
+                  placeholder="Enter OTP"
+                  className="h-14 rounded-xl border-navy/10 focus:border-gold focus:ring-gold"
+                  required
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="password">New Password</Label>
                 <div className="relative">
@@ -54,6 +93,8 @@ export default function ResetPassword() {
                     id="password" 
                     type={showPassword ? 'text' : 'password'} 
                     placeholder="••••••••" 
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
                     className="h-14 rounded-xl border-navy/10 focus:border-gold focus:ring-gold pr-12"
                     required
                   />
@@ -77,6 +118,8 @@ export default function ResetPassword() {
                   id="confirm-password" 
                   type="password" 
                   placeholder="••••••••" 
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
                   className="h-14 rounded-xl border-navy/10 focus:border-gold focus:ring-gold"
                   required
                 />

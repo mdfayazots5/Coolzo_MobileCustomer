@@ -55,6 +55,7 @@ import AMCDashboard from '@/pages/AMCDashboard';
 import Invoices from '@/pages/Invoices';
 import InvoiceDetail from '@/pages/InvoiceDetail';
 import SupportTickets from '@/pages/SupportTickets';
+import ContactSupport from '@/pages/ContactSupport';
 import RaiseTicket from '@/pages/RaiseTicket';
 import TicketDetail from '@/pages/TicketDetail';
 import Profile from '@/pages/Profile';
@@ -75,7 +76,7 @@ import Changelog from '@/pages/Changelog';
 import ErrorScreen from '@/pages/ErrorScreen';
 import NetworkStatusBanner from '@/components/NetworkStatusBanner';
 
-export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+export const ProtectedRoute = ({ children }: { children?: React.ReactNode }) => {
   const { isAuthenticated } = useAuthStore();
   if (!isAuthenticated) return <Navigate to="/auth-gate" replace />;
   return <>{children}</>;
@@ -154,8 +155,12 @@ export default function App() {
           <Route path="/booking-resume" element={<BookingDraftResume />} />
           <Route path="/amc-enrollment" element={<AMCEnrollmentVariant />} />
           <Route path="/app/invoice/:id" element={<ProtectedRoute><InvoiceDetail /></ProtectedRoute>} />
+          <Route path="/app/invoices/:id" element={<ProtectedRoute><InvoiceDetail /></ProtectedRoute>} />
           <Route path="/app/support/new" element={<ProtectedRoute><RaiseTicket /></ProtectedRoute>} />
+          <Route path="/app/contact-support" element={<ProtectedRoute><ContactSupport /></ProtectedRoute>} />
+          <Route path="/app/support/tickets" element={<ProtectedRoute><SupportTickets /></ProtectedRoute>} />
           <Route path="/app/support/:id" element={<ProtectedRoute><TicketDetail /></ProtectedRoute>} />
+          <Route path="/app/support/tickets/:id" element={<ProtectedRoute><TicketDetail /></ProtectedRoute>} />
           <Route path="/app/privacy" element={<LegalContent />} />
           <Route path="/app/terms" element={<LegalContent />} />
           <Route path="/app/payment/:id" element={<ProtectedRoute><PaymentGateway /></ProtectedRoute>} />

@@ -18,7 +18,6 @@ import { Badge } from '@/components/ui/badge';
 import { EquipmentService, Equipment } from '@/services/equipmentService';
 import EmptyState from '@/components/EmptyState';
 import { useAuthStore } from '@/store/useAuthStore';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function EquipmentList() {
@@ -80,7 +79,7 @@ export default function EquipmentList() {
             <ArrowLeft className="w-8 h-8" />
           </button>
           <Button 
-            onClick={() => navigate('/app/add-edit-equipment')}
+            onClick={() => navigate('/app/equipment/new')}
             className="w-18 h-18 rounded-[32px] bg-gold text-navy shadow-[0_20px_50px_-15px_rgba(201,162,74,0.4)] flex items-center justify-center p-0 active:scale-90 transition-all hover:bg-gold/90 group"
           >
             <Plus className="w-10 h-10 group-hover:rotate-90 transition-transform duration-700" />
@@ -110,7 +109,7 @@ export default function EquipmentList() {
                 title="Registry Nullified"
                 description="Zero assets detected within current archival grid. Initialize your first artifact to enable institutional predictive telemetry."
                 actionLabel="Initialize Artifact"
-                onAction={() => navigate('/app/add-edit-equipment')}
+                onAction={() => navigate('/app/equipment/new')}
               />
             </div>
           ) : (
@@ -120,7 +119,7 @@ export default function EquipmentList() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0, transition: { delay: idx * 0.1 } }}
                 className="bg-white rounded-[72px] p-12 border border-navy/5 shadow-3xl shadow-black/[0.01] group active:scale-[0.99] transition-all hover:border-gold/30 hover:shadow-3xl relative overflow-hidden"
-                onClick={() => navigate(`/app/equipment-detail/${eq.id}`)}
+                onClick={() => navigate(`/app/equipment/${eq.id}`)}
               >
                 <div className="flex items-start justify-between mb-16 relative z-10">
                   <div className="flex items-center gap-10">
@@ -139,7 +138,7 @@ export default function EquipmentList() {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/app/add-edit-equipment/${eq.id}`);
+                        navigate(`/app/equipment/edit/${eq.id}`);
                       }}
                       className="w-16 h-16 rounded-[24px] bg-navy/[0.03] flex items-center justify-center text-navy/10 hover:text-navy hover:bg-navy/10 transition-all active:scale-95 shadow-inner border border-navy/5"
                     >
@@ -174,8 +173,8 @@ export default function EquipmentList() {
                       <Calendar className="w-6 h-6" />
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.5em] text-navy/20">Init. Registry</p>
-                      <p className="text-[15px] font-bold uppercase tracking-[0.2em] text-navy/40 italic">{eq.purchaseDate || 'Temporal Gap'}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.5em] text-navy/20">Last Service</p>
+                      <p className="text-[15px] font-bold uppercase tracking-[0.2em] text-navy/40 italic">{eq.lastServiceDate || 'No Recorded Visit'}</p>
                     </div>
                   </div>
                   <Button 

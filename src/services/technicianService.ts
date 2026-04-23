@@ -1,7 +1,17 @@
 import { API_CONFIG } from '../config/apiConfig';
 import { apiClient } from './apiClient';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+
+interface TechnicianPublicResponse {
+  technicianId: number;
+  name: string;
+  photoUrl: string;
+  rating: number;
+  totalJobs: number;
+  experience: string;
+  specialization: string[];
+  languages: string[];
+  verified: boolean;
+}
 
 export interface Technician {
   id: string;
@@ -16,8 +26,6 @@ export interface Technician {
 }
 
 export class TechnicianService {
-  private static COLLECTION = 'technicians';
-
   static async getTechnicianById(id: string): Promise<Technician | null> {
     if (API_CONFIG.IS_MOCK) {
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -33,6 +41,19 @@ export class TechnicianService {
         verified: true
       };
     }
-    return apiClient.get<Technician>(`/technicians/${id}`);
+
+    const response = await apiClient.get<TechnicianPublicResponse>(`/technicians/${id}/public`, undefined, true);
+
+    return {
+      id: String(response.technicianId),
+      name: response.name,
+      photoUrl: response.photoUrl,
+      rating: Number(response.rating),
+      totalJobs: Number(response.totalJobs),
+      experience: response.experience,
+      specialization: response.specialization ?? [],
+      languages: response.languages ?? [],
+      verified: response.verified,
+    };
   }
 }

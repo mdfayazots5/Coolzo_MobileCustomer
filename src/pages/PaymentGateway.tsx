@@ -44,12 +44,11 @@ const PaymentGateway = () => {
     if (!invoice) return;
     setIsProcessing(true);
     try {
-      await PaymentService.processPayment({
-        invoiceId: id,
-        amount: invoice.amount,
-        method
+      const result = await PaymentService.processPayment({
+        invoiceId: id!,
+        method,
       });
-      navigate(`/app/payment-status/success/${id}`);
+      navigate(`/app/payment-status/${result.status === 'Confirmed' ? 'success' : 'failed'}/${id}`);
     } catch (error) {
       toast.error('Payment failed. Please try again.');
     } finally {

@@ -10,15 +10,12 @@ import {
   ChevronRight, 
   Crown,
   Zap,
-  Building2,
   RefreshCw,
   Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AMCService, AMCSubscription } from '@/services/amcService';
-import { JOBS } from '@/lib/mockData';
 import { useAuthStore } from '@/store/useAuthStore';
-import { cn } from '@/lib/utils';
 
 export default function AMCDashboard() {
   const navigate = useNavigate();
@@ -40,8 +37,6 @@ export default function AMCDashboard() {
     };
     fetchSubscription();
   }, [user]);
-
-  const pastVisits = JOBS.filter(j => j.serviceType.includes('AMC') || j.status === 'Completed').slice(0, 3);
 
   const getTierIcon = (planName: string) => {
     if (planName?.includes('Premium')) return Crown;
@@ -82,7 +77,7 @@ export default function AMCDashboard() {
 
         <Button 
           className="w-full max-w-[360px] h-24 rounded-[36px] bg-navy text-gold font-bold text-[20px] uppercase tracking-[0.4em] shadow-3xl shadow-navy/40 active:scale-95 transition-all italic hover:brightness-105"
-          onClick={() => navigate('/app/amc-plans')}
+          onClick={() => navigate('/amc-plans')}
         >
           Evaluate Mastery Tiers
         </Button>
@@ -91,6 +86,12 @@ export default function AMCDashboard() {
   }
 
   const TierIcon = getTierIcon(subscription.planName);
+  const nextVisit = subscription.visits.find((visit) => !visit.status.toLowerCase().includes('completed'));
+  const pastVisits = subscription.visits
+    .filter((visit) => visit.status.toLowerCase().includes('completed'))
+    .sort((left, right) => new Date(right.scheduledDate).getTime() - new Date(left.scheduledDate).getTime())
+    .slice(0, 3);
+  const daysUntilExpiry = Math.max(Math.ceil((new Date(subscription.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)), 0);
 
   return (
     <div className="flex flex-col min-h-screen bg-warm-white pb-48 relative overflow-hidden">
@@ -149,7 +150,7 @@ export default function AMCDashboard() {
 
       <div className="px-8 -mt-16 py-20 space-y-24 relative z-30 pb-40">
         {/* Next Visit Module */}
-        {subscription.nextVisitDate && (
+        {nextVisit && (
           <section className="space-y-12">
             <div className="flex items-end justify-between px-6">
               <div className="space-y-3 italic">
@@ -165,7 +166,7 @@ export default function AMCDashboard() {
                 </div>
                 <div className="space-y-4">
                   <p className="text-[44px] font-display font-bold text-navy leading-none tracking-tighter uppercase">
-                    {new Date(subscription.nextVisitDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })}
+                    {new Date(nextVisit.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })}
                   </p>
                   <div className="flex items-center gap-4">
                     <div className="w-2 h-2 rounded-full bg-gold animate-pulse" />
@@ -176,17 +177,10 @@ export default function AMCDashboard() {
               
               <div className="flex gap-8 relative z-10">
                 <Button 
-                  variant="outline"
-                  className="flex-1 h-22 rounded-[32px] border-navy/10 bg-navy/5 text-navy/30 font-bold text-[15px] uppercase tracking-[0.4em] active:scale-95 transition-all hover:bg-navy/10 hover:text-navy italic"
-                  onClick={() => navigate('/app/reschedule-booking/amc-next')}
-                >
-                  Postpone
-                </Button>
-                <Button 
                   className="flex-1 h-22 rounded-[32px] bg-navy text-gold shadow-3xl shadow-navy/40 font-bold text-[15px] uppercase tracking-[0.4em] active:scale-95 transition-all hover:bg-navy/95 italic uppercase"
-                  onClick={() => navigate('/app/amc-visit-detail/amc-next')}
+                  onClick={() => navigate(`/app/amc/visit/${nextVisit.id}`)}
                 >
-                  Authorize
+                  View Visit
                 </Button>
               </div>
             </div>
@@ -205,21 +199,21 @@ export default function AMCDashboard() {
           <div className="grid grid-cols-1 gap-8">
             {pastVisits.map((visit, i) => (
               <motion.div 
-                key={i}
+                key={visit.id}
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0, transition: { delay: i * 0.1 } }}
                 className="bg-white rounded-[56px] p-10 border border-navy/5 shadow-3xl shadow-black/[0.01] flex items-center justify-between group active:scale-[0.98] transition-all hover:border-gold/30 hover:shadow-black/5 relative overflow-hidden italic"
-                onClick={() => navigate(`/app/service-report/${visit.id}`)}
+                onClick={() => navigate(`/app/amc/visit/${visit.id}`)}
               >
                 <div className="flex items-center gap-10 relative z-10">
                   <div className="w-20 h-20 rounded-[32px] bg-navy/5 flex items-center justify-center text-navy/10 group-hover:bg-navy group-hover:text-gold transition-all duration-1000 shadow-inner group-hover:rotate-12">
                     <CheckCircle2 className="w-10 h-10" />
                   </div>
                   <div className="space-y-3">
-                    <p className="font-bold text-navy text-[26px] tracking-tighter leading-none uppercase">Cycle #{subscription.totalVisits - subscription.remainingVisits - i}</p>
+                    <p className="font-bold text-navy text-[26px] tracking-tighter leading-none uppercase">Cycle #{visit.visitNumber}</p>
                     <div className="flex items-center gap-4">
                       <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                      <p className="text-[11px] text-navy/30 font-bold uppercase tracking-[0.5em] leading-none">{new Date(visit.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                      <p className="text-[11px] text-navy/30 font-bold uppercase tracking-[0.5em] leading-none">{new Date(visit.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                     </div>
                   </div>
                 </div>
@@ -233,21 +227,23 @@ export default function AMCDashboard() {
         </section>
 
         {/* Renewal Protocol Layer */}
-        <section className="bg-gold rounded-[72px] p-16 relative overflow-hidden shadow-3xl shadow-gold/30 group active:scale-[0.99] transition-all text-center mx-2">
+        {daysUntilExpiry <= 30 && (
+          <section className="bg-gold rounded-[72px] p-16 relative overflow-hidden shadow-3xl shadow-gold/30 group active:scale-[0.99] transition-all text-center mx-2">
           <div className="relative z-10 flex flex-col items-center">
             <div className="w-28 h-28 rounded-[48px] bg-navy flex items-center justify-center text-gold mb-14 shadow-3xl shadow-navy/40 group-hover:rotate-[360deg] transition-transform duration-[2000ms]">
               <RefreshCw className="w-12 h-12" />
             </div>
             <h3 className="text-[48px] font-display font-bold text-navy mb-6 tracking-tighter leading-none italic uppercase">Perpetuate Excellence</h3>
             <p className="text-navy/50 text-[15px] font-bold mb-16 leading-relaxed max-w-[380px] uppercase tracking-[0.3em] italic">
-              Sustain institutional priority and grandfathered protection rates across the grid.
+              Sustain institutional priority and grandfathered protection rates across the grid. {daysUntilExpiry} days remain before protocol expiry.
             </p>
-            <Button className="w-full h-24 rounded-[36px] bg-navy text-gold font-bold text-[20px] uppercase tracking-[0.4em] shadow-3xl shadow-navy/40 active:scale-95 transition-all hover:bg-navy/95 italic uppercase">
+            <Button className="w-full h-24 rounded-[36px] bg-navy text-gold font-bold text-[20px] uppercase tracking-[0.4em] shadow-3xl shadow-navy/40 active:scale-95 transition-all hover:bg-navy/95 italic uppercase" onClick={() => navigate('/amc-plans')}>
               Initialize Renewal Protocol
             </Button>
           </div>
           <RefreshCw className="absolute -right-32 -bottom-32 w-[500px] h-[500px] text-navy/[0.04] -rotate-12 pointer-events-none group-hover:rotate-[45deg] transition-transform duration-[5000ms]" />
-        </section>
+          </section>
+        )}
       </div>
     </div>
   );

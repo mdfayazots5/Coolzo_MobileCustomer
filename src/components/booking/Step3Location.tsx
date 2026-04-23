@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
+import { BookingService } from '@/services/bookingService';
 import { useBookingStore } from '@/store/useBookingStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,8 +11,10 @@ import { MapPin, Map as MapIcon, Check, Home, Briefcase, MoreHorizontal } from '
 import { Checkbox } from '@/components/ui/checkbox';
 
 export default function Step3Location() {
+  const navigate = useNavigate();
   const { location, updateLocation } = useBookingStore();
   const { isAuthenticated } = useAuthStore();
+  const [zoneStatus, setZoneStatus] = useState<string>('');
 
   const labels = [
     { id: 'Home', icon: Home },
@@ -18,11 +22,40 @@ export default function Step3Location() {
     { id: 'Other', icon: MoreHorizontal },
   ] as const;
 
+  useEffect(() => {
+    if (location.pinCode.length < 6) {
+      setZoneStatus('');
+      return;
+    }
+
+    void BookingService.lookupZone(location.pinCode)
+      .then((zone) => {
+        updateLocation({
+          city: zone.cityName,
+          zoneId: zone.zoneId,
+        });
+        setZoneStatus(`Service available in ${zone.zoneName}`);
+      })
+      .catch(() => {
+        updateLocation({ zoneId: null });
+        setZoneStatus('Selected PIN code is outside the current service zone.');
+      });
+  }, [location.pinCode, updateLocation]);
+
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-display font-bold text-navy mb-2">Service Location</h2>
         <p className="text-navy/60 text-sm">Where should our technician arrive?</p>
+        {isAuthenticated && (
+          <button
+            type="button"
+            onClick={() => navigate('/app/addresses/new')}
+            className="mt-3 text-[10px] font-bold uppercase tracking-widest text-gold"
+          >
+            Add Address To Account
+          </button>
+        )}
       </div>
 
       {/* Map Placeholder */}
@@ -61,7 +94,7 @@ export default function Step3Location() {
                 placeholder="Mumbai" 
                 className="h-14 rounded-2xl border-navy/10 bg-navy/5 text-navy/40"
                 value={location.city}
-                disabled
+                readOnly
               />
             </div>
             <div className="space-y-2">
@@ -103,6 +136,15 @@ export default function Step3Location() {
             ))}
           </div>
         </section>
+
+        {zoneStatus ? (
+          <div className={cn(
+            "rounded-2xl px-4 py-3 text-xs font-bold",
+            location.zoneId ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+          )}>
+            {zoneStatus}
+          </div>
+        ) : null}
 
         {isAuthenticated && (
           <div className="flex items-center space-x-3 p-4 bg-navy/5 rounded-2xl">

@@ -21,7 +21,12 @@ const AppRatingPrompt = () => {
     }
     setIsSubmitting(true);
     try {
-      await ContentService.submitAppFeedback(user.uid, { rating });
+      await ContentService.submitAppFeedback(user.uid, {
+        rating,
+        comment: 'Submitted from the in-app rating prompt.',
+        appVersion: 'customer-web',
+        platform: navigator.userAgent,
+      });
       toast.success('Thank you for your feedback!');
       navigate(-1);
     } catch (error) {

@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { useBookingStore } from '@/store/useBookingStore';
 import { cn } from '@/lib/utils';
-import { SERVICES } from '@/lib/mockData';
+import { CatalogService } from '@/services/catalogService';
 import { 
   CheckCircle2, 
   MapPin, 
@@ -21,8 +21,17 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 
 export default function Step6Summary() {
-  const { serviceId, equipment, location, slot, contact, pricing } = useBookingStore();
-  const service = SERVICES.find(s => s.id === serviceId);
+  const { serviceId, equipment, location, slot, contact, pricing, termsAccepted, updateBooking } = useBookingStore();
+  const [service, setService] = React.useState<any | null>(null);
+
+  React.useEffect(() => {
+    if (!serviceId) {
+      setService(null);
+      return;
+    }
+
+    void CatalogService.getServiceById(serviceId).then(setService).catch(() => setService(null));
+  }, [serviceId]);
 
   const summaryItems = [
     { 
@@ -115,6 +124,8 @@ export default function Step6Summary() {
         <div className="flex items-start space-x-3 px-2">
           <Checkbox 
             id="terms" 
+            checked={termsAccepted}
+            onCheckedChange={(checked) => updateBooking({ termsAccepted: !!checked })}
             className="mt-1 border-navy/20 data-[state=checked]:bg-navy data-[state=checked]:border-navy"
           />
           <Label htmlFor="terms" className="text-[10px] font-medium text-navy/40 leading-relaxed cursor-pointer">

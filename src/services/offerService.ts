@@ -1,7 +1,17 @@
 import { API_CONFIG } from '../config/apiConfig';
 import { apiClient } from './apiClient';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+
+interface PromotionalOfferResponse {
+  promotionalOfferId: number;
+  code: string;
+  title: string;
+  description: string;
+  discountType: string;
+  discountValue: number;
+  minOrderValue: number;
+  expiryDate?: string | null;
+  category?: string | null;
+}
 
 export interface Offer {
   id: string;
@@ -16,7 +26,19 @@ export interface Offer {
 }
 
 export class OfferService {
-  private static COLLECTION = 'offers';
+  private static mapOffer(item: PromotionalOfferResponse): Offer {
+    return {
+      id: String(item.promotionalOfferId),
+      code: item.code,
+      title: item.title,
+      description: item.description,
+      discountType: item.discountType.toLowerCase().includes('percent') ? 'percentage' : 'fixed',
+      discountValue: Number(item.discountValue),
+      minOrderValue: Number(item.minOrderValue),
+      expiryDate: item.expiryDate ?? '',
+      category: item.category ?? undefined,
+    };
+  }
 
   static async getOffers(): Promise<Offer[]> {
     if (API_CONFIG.IS_MOCK) {
@@ -34,10 +56,12 @@ export class OfferService {
         }
       ];
     }
-    return apiClient.get<Offer[]>('/offers');
+
+    const response = await apiClient.get<PromotionalOfferResponse[]>('/offers');
+    return response.map(this.mapOffer);
   }
 
-  static async validateCoupon(code: string, userId: string): Promise<Offer | null> {
+  static async validateCoupon(code: string, _userId: string): Promise<Offer | null> {
     if (API_CONFIG.IS_MOCK) {
       if (code === 'WELCOME20') {
         return {
@@ -53,6 +77,8 @@ export class OfferService {
       }
       return null;
     }
-    return apiClient.post<Offer | null>('/offers/validate', { code, userId });
+
+    const response = await apiClient.post<PromotionalOfferResponse | null>('/offers/validate-coupon', { code });
+    return response ? this.mapOffer(response) : null;
   }
 }

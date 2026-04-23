@@ -1,7 +1,21 @@
 import { API_CONFIG } from '../config/apiConfig';
 import { apiClient } from './apiClient';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+
+interface ReferralResponse {
+  customerReferralId: number;
+  name: string;
+  status: 'Pending' | 'Completed';
+  reward: number;
+  date: string;
+}
+
+interface ReferralStatsResponse {
+  referralCode: string;
+  totalReferrals: number;
+  totalEarnings: number;
+  pendingReferrals: number;
+  referrals: ReferralResponse[];
+}
 
 export interface Referral {
   id: string;
@@ -20,8 +34,6 @@ export interface ReferralStats {
 }
 
 export class ReferralService {
-  private static COLLECTION = 'referrals';
-
   static async getReferralStats(userId: string): Promise<ReferralStats> {
     if (API_CONFIG.IS_MOCK) {
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -36,6 +48,21 @@ export class ReferralService {
         ]
       };
     }
-    return apiClient.get<ReferralStats>(`/users/${userId}/referrals`);
+
+    const response = await apiClient.get<ReferralStatsResponse>('/referrals/me');
+
+    return {
+      referralCode: response.referralCode || `COOL${userId.slice(0, 5).toUpperCase()}`,
+      totalReferrals: Number(response.totalReferrals),
+      totalEarnings: Number(response.totalEarnings),
+      pendingReferrals: Number(response.pendingReferrals),
+      referrals: (response.referrals ?? []).map((item) => ({
+        id: String(item.customerReferralId),
+        name: item.name,
+        status: item.status,
+        reward: Number(item.reward),
+        date: item.date,
+      })),
+    };
   }
 }

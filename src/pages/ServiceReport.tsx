@@ -5,6 +5,7 @@ import { ChevronLeft, Download, CheckCircle2, Thermometer, Zap, Droplets, Info, 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookingService } from '@/services/bookingService';
+import { toast } from 'sonner';
 
 export default function ServiceReport() {
   const { id } = useParams();
@@ -32,6 +33,18 @@ export default function ServiceReport() {
     { icon: Zap, label: 'Operational Draw', val: '6.2A', status: 'Nominal Load' },
     { icon: Droplets, label: 'Sanitization Level', val: '100%', status: 'Biometrically Pure' }
   ];
+
+  const handleDownload = async () => {
+    if (!id) {
+      return;
+    }
+
+    try {
+      await BookingService.downloadServiceReportPdf(id);
+    } catch (error) {
+      toast.error('Failed to download service report PDF.');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -72,7 +85,7 @@ export default function ServiceReport() {
               <p className="text-warm-white/30 text-[10px] font-bold uppercase tracking-[0.4em] mt-2 italic leading-none">Security Clearance Verified • #{report.jobId}</p>
             </div>
           </div>
-          <button className="w-16 h-16 rounded-[24px] bg-gold flex items-center justify-center text-navy shadow-3xl shadow-gold/30 active:scale-95 transition-all active:brightness-90">
+          <button onClick={() => void handleDownload()} className="w-16 h-16 rounded-[24px] bg-gold flex items-center justify-center text-navy shadow-3xl shadow-gold/30 active:scale-95 transition-all active:brightness-90">
             <Download className="w-8 h-8" />
           </button>
         </div>

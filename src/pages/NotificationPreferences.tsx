@@ -6,11 +6,9 @@ import {
   MessageSquare, 
   Mail, 
   Smartphone,
-  CheckCircle2,
   Info,
   Loader2
 } from 'lucide-react';
-import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { NotificationService, NotificationPreferences as Prefs } from '@/services/notificationService';
@@ -43,6 +41,16 @@ const NotificationPreferences = () => {
     if (!prefs) return;
     setPrefs({ ...prefs, [channel]: !prefs[channel] });
   };
+
+  const categories = prefs ? [
+    { id: 'booking', label: 'Booking Confirmations', desc: 'Critical booking and OTP traffic stays enabled.', value: true, locked: true },
+    { id: 'technician', label: 'Technician Updates', desc: 'Assignments, arrivals, and field changes.', value: prefs.updates, toggleKey: 'updates' as keyof Prefs },
+    { id: 'job', label: 'Job Status', desc: 'Progress milestones and service completion signals.', value: prefs.updates, toggleKey: 'updates' as keyof Prefs },
+    { id: 'invoice', label: 'Invoice / Payment', desc: 'Invoice issuance and payment reminders.', value: prefs.updates, toggleKey: 'updates' as keyof Prefs },
+    { id: 'amc', label: 'AMC Reminders', desc: 'Upcoming visit and renewal notices.', value: prefs.updates, toggleKey: 'updates' as keyof Prefs },
+    { id: 'promotions', label: 'Promotions', desc: 'Discounts, offers, and growth campaigns.', value: prefs.offers, toggleKey: 'offers' as keyof Prefs },
+    { id: 'support', label: 'Support', desc: 'Ticket replies and closure updates.', value: prefs.updates, toggleKey: 'updates' as keyof Prefs },
+  ] : [];
 
   const handleSave = async () => {
     if (!user || !prefs) return;
@@ -133,21 +141,18 @@ const NotificationPreferences = () => {
 
           <div className="bg-white rounded-[40px] p-10 border border-navy/5 shadow-sm">
             <div className="mb-10">
-              <h3 className="font-bold text-navy text-[17px] tracking-tight">Intelligence Payload</h3>
-              <p className="text-navy/30 text-[10px] font-bold uppercase tracking-[0.2em] mt-1.5">Configure automated broadcast metrics</p>
+              <h3 className="font-bold text-navy text-[17px] tracking-tight">Notification Categories</h3>
+              <p className="text-navy/30 text-[10px] font-bold uppercase tracking-[0.2em] mt-1.5">Operational categories are mapped from the live communication preference record</p>
             </div>
 
             <div className="space-y-4">
-              {[
-                { id: 'offers', label: 'Commercial Dispatches', desc: 'Promotional engagements & exclusive fiscal offers' },
-                { id: 'updates', label: 'System Iterations', desc: 'Protocol updates and feature deployment logs' }
-              ].map((item) => (
+              {categories.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => toggleChannel(item.id as keyof Prefs)}
+                  onClick={() => !item.locked && item.toggleKey && toggleChannel(item.toggleKey)}
                   className={cn(
                     "w-full flex items-center justify-between p-7 rounded-[32px] border transition-all active:scale-[0.98]",
-                    prefs?.[item.id as keyof Prefs]
+                    item.value
                       ? "bg-gold/5 border-gold/20"
                       : "bg-white border-navy/5 shadow-inner"
                   )}
@@ -156,15 +161,21 @@ const NotificationPreferences = () => {
                     <p className="text-[15px] font-bold text-navy leading-tight">{item.label}</p>
                     <p className="text-[10px] text-navy/40 font-bold uppercase tracking-[0.1em] mt-2 leading-relaxed">{item.desc}</p>
                   </div>
-                  <div className={cn(
-                    "w-12 h-7 rounded-full relative transition-all duration-300",
-                    prefs?.[item.id as keyof Prefs] ? "bg-gold shadow-lg shadow-gold/20" : "bg-navy/10"
-                  )}>
+                  {item.locked ? (
+                    <div className="rounded-full bg-navy text-gold px-5 py-2 text-[10px] font-bold uppercase tracking-[0.25em]">
+                      Locked
+                    </div>
+                  ) : (
                     <div className={cn(
-                      "absolute top-1 w-5 h-5 bg-white rounded-full transition-all duration-300 shadow-sm",
-                      prefs?.[item.id as keyof Prefs] ? "left-6" : "left-1"
-                    )} />
-                  </div>
+                      "w-12 h-7 rounded-full relative transition-all duration-300",
+                      item.value ? "bg-gold shadow-lg shadow-gold/20" : "bg-navy/10"
+                    )}>
+                      <div className={cn(
+                        "absolute top-1 w-5 h-5 bg-white rounded-full transition-all duration-300 shadow-sm",
+                        item.value ? "left-6" : "left-1"
+                      )} />
+                    </div>
+                  )}
                 </button>
               ))}
             </div>

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { 
   Check, 
@@ -19,9 +19,11 @@ import { toast } from 'sonner';
 
 export default function BookingConfirmation() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { resetBooking, contact } = useBookingStore();
   const { isAuthenticated } = useAuthStore();
-  const bookingRef = "CZ-" + Math.floor(100000 + Math.random() * 900000);
+  const bookingRef = location.state?.srNumber || 'Pending';
+  const bookingId = location.state?.bookingId;
 
   useEffect(() => {
     // Reset booking state when leaving this screen
@@ -34,11 +36,12 @@ export default function BookingConfirmation() {
   };
 
   const handleShare = () => {
-    const text = `Institutional deployment synchronized with Coolzo. Reference: ${bookingRef}. Experience the elite standard.`;
+    const text = `My CoolElite booking ref: ${bookingRef}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
     if (navigator.share) {
       navigator.share({ title: 'Coolzo Deployment', text });
     } else {
-      handleCopy();
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -96,7 +99,7 @@ export default function BookingConfirmation() {
             </Button>
             <Button 
               className="h-20 rounded-[28px] bg-navy text-gold font-bold gap-4 uppercase tracking-[0.3em] text-[12px] shadow-3xl shadow-navy/40 hover:bg-navy/95 active:scale-95 transition-all italic"
-              onClick={() => navigate('/app/jobs')}
+              onClick={() => navigate(bookingId ? `/job-tracker/${bookingId}` : '/app/jobs')}
             >
               Telemetry <ArrowRight className="w-5 h-5 text-gold" />
             </Button>

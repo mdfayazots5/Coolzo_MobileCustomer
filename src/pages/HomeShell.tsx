@@ -48,6 +48,7 @@ import PromotionalOffers from '@/pages/PromotionalOffers';
 import NotificationCentre from '@/pages/NotificationCentre';
 import PermissionsManagement from '@/pages/PermissionsManagement';
 import Changelog from '@/pages/Changelog';
+import { SupportService } from '@/services/supportService';
 import { 
   SERVICES, 
   AMC_PLANS, 
@@ -56,8 +57,7 @@ import {
   JOBS,
   USER_AMC,
   TECHNICIANS,
-  INVOICES,
-  SUPPORT_TICKETS
+  INVOICES
 } from '@/lib/mockData';
 import { FEATURE_FLAGS } from '@/config/apiConfig';
 import { 
@@ -106,22 +106,22 @@ const getIconByServiceName = (serviceName: string) => {
 const HomeTab = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuthStore();
-  const [activeJobs, setActiveJobs] = useState<any[]>([]);
+  const [activeJob, setActiveJob] = useState<any | null>(null);
   const [recentJobs, setRecentJobs] = useState<any[]>([]);
-  const amc = USER_AMC;
+  const [amc, setAmc] = useState<any | null>(USER_AMC);
 
   useEffect(() => {
     if (!isAuthenticated || !user) return;
 
-    const unsubscribe = BookingService.getLiveJobs(user.uid, (jobs) => {
-      setActiveJobs(jobs.filter((j: any) => !['Completed', 'Cancelled'].includes(j.status)));
-      setRecentJobs(jobs.filter((j: any) => j.status === 'Completed').slice(0, 2));
-    });
+    const loadDashboard = async () => {
+      const dashboard = await BookingService.getDashboard();
+      setActiveJob(dashboard.activeJob);
+      setRecentJobs(dashboard.recentBookings);
+      setAmc(dashboard.amcSummary);
+    };
 
-    return () => unsubscribe();
+    void loadDashboard();
   }, [isAuthenticated, user]);
-
-  const activeJob = activeJobs[0];
 
   if (!isAuthenticated) {
     return (
@@ -290,8 +290,10 @@ const HomeTab = () => {
             <div className="relative z-10 space-y-10">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-[28px] font-display font-bold text-gold tracking-tight leading-none">{amc.planName}</h4>
-                  <p className="text-warm-white/20 text-[10px] font-bold uppercase tracking-[0.3em] mt-3">Commissioned until {amc.endDate}</p>
+                  <h4 className="text-[28px] font-display font-bold text-gold tracking-tight leading-none">{amc?.contractName || 'No Active AMC'}</h4>
+                  <p className="text-warm-white/20 text-[10px] font-bold uppercase tracking-[0.3em] mt-3">
+                    {amc?.nextVisitDate ? `Next visit ${amc.nextVisitDate}` : 'Enrollment required for scheduled visits'}
+                  </p>
                 </div>
                 <div className="w-16 h-16 rounded-[24px] bg-white/5 border border-white/5 flex items-center justify-center text-gold/40 shadow-inner group-hover:scale-110 transition-transform duration-700">
                   <ShieldCheck className="w-8 h-8" />
@@ -301,12 +303,12 @@ const HomeTab = () => {
               <div className="space-y-4">
                 <div className="flex justify-between text-[10px] font-bold uppercase tracking-[0.3em] text-warm-white/20">
                   <span>Usage Delta</span>
-                  <span>{amc.visitsUsed} / {amc.totalVisits} Units</span>
+                  <span>{amc ? `${amc.visitsRemaining} Visits Remaining` : '0 Visits Remaining'}</span>
                 </div>
                 <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden shadow-inner">
                   <motion.div 
                     initial={{ width: 0 }}
-                    animate={{ width: `${(amc.visitsUsed / amc.totalVisits) * 100}%` }}
+                    animate={{ width: amc ? `${Math.max(Math.min((amc.visitsRemaining / 4) * 100, 100), 0)}%` : '0%' }}
                     className="h-full bg-gold shadow-[0_0_15px_rgba(201,162,74,0.3)]" 
                   />
                 </div>
@@ -458,7 +460,24 @@ const BookTab = () => {
 const AccountTab = () => {
   const { user, logout, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
-  const unreadTickets = SUPPORT_TICKETS.filter(t => t.status === 'In Progress').length; // Mocking unread as In Progress
+  const [unreadTickets, setUnreadTickets] = useState(0);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setUnreadTickets(0);
+      return;
+    }
+
+    const loadUnreadTickets = async () => {
+      try {
+        setUnreadTickets(await SupportService.getUnreadCount());
+      } catch {
+        setUnreadTickets(0);
+      }
+    };
+
+    void loadUnreadTickets();
+  }, [isAuthenticated]);
 
   if (!isAuthenticated) {
     return (
@@ -481,7 +500,7 @@ const AccountTab = () => {
   }
 
   const menuItems = [
-    { icon: MessageSquare, label: 'Technical Support', path: '/app/support', badge: unreadTickets > 0 ? unreadTickets : null },
+    { icon: MessageSquare, label: 'Technical Support', path: '/app/support/tickets', badge: unreadTickets > 0 ? unreadTickets : null },
     ...(FEATURE_FLAGS.SHOW_SPECIAL_OFFERS ? [{ icon: Tag, label: 'Privilege Vouchers', path: '/app/offers' }] : []),
     ...(FEATURE_FLAGS.SHOW_LOYALTY_REWARDS ? [{ icon: Trophy, label: 'Performance Rewards', path: '/app/rewards' }] : []),
     ...(FEATURE_FLAGS.SHOW_REFER_FRIEND ? [{ icon: Heart, label: 'Recruitment Protocol', path: '/app/refer' }] : []),
@@ -779,7 +798,8 @@ export default function HomeShell() {
               <Route path="/equipment" element={<ProtectedRoute><EquipmentList /></ProtectedRoute>} />
               <Route path="/amc" element={<ProtectedRoute><AMCDashboard /></ProtectedRoute>} />
               <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
-              <Route path="/support" element={<ProtectedRoute><SupportTickets /></ProtectedRoute>} />
+              <Route path="/support" element={<Navigate to="/app/support/tickets" replace />} />
+              <Route path="/support/tickets" element={<ProtectedRoute><SupportTickets /></ProtectedRoute>} />
               <Route path="/profile-settings" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/addresses" element={<ProtectedRoute><Addresses /></ProtectedRoute>} />
               <Route path="/notification-preferences" element={<ProtectedRoute><NotificationPreferences /></ProtectedRoute>} />

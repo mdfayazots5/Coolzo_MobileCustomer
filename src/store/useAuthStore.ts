@@ -41,6 +41,8 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'coolzo-auth-storage',
       partialize: (state) => ({ 
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
         hasCompletedOnboarding: state.hasCompletedOnboarding,
         hasSeenNotificationPrompt: state.hasSeenNotificationPrompt 
       }),

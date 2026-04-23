@@ -15,9 +15,15 @@ import { Button } from '@/components/ui/button';
 import { ContentService } from '@/services/contentService';
 import { cn } from '@/lib/utils';
 
+interface ChangelogEntry {
+  version: string;
+  date: string;
+  changes: string[];
+}
+
 export default function Changelog() {
   const navigate = useNavigate();
-  const [changelog, setChangelog] = useState<any[]>([]);
+  const [changelog, setChangelog] = useState<ChangelogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -147,6 +153,29 @@ export default function Changelog() {
             </ul>
             <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-white/5 rounded-full blur-[100px]" />
           </div>
+
+          {changelog.slice(1).length > 0 && (
+            <div className="mt-12 space-y-6">
+              <h4 className="text-[10px] font-bold uppercase tracking-[0.4em] text-navy/20 mb-6 px-4 border-l-4 border-gold">
+                Previous Releases
+              </h4>
+              <div className="space-y-4">
+                {changelog.slice(1).map((entry) => (
+                  <div key={`${entry.version}-${entry.date}`} className="rounded-[32px] border border-navy/5 bg-white p-8">
+                    <div className="flex items-center justify-between gap-4">
+                      <p className="text-[18px] font-display font-bold text-navy uppercase italic">Vento {entry.version}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-navy/30">{entry.date}</p>
+                    </div>
+                    <ul className="mt-4 space-y-2">
+                      {entry.changes.slice(0, 3).map((item) => (
+                        <li key={item} className="text-[12px] text-navy/50">{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           
           <div className="absolute top-0 right-0 w-32 h-32 bg-gold/[0.01] rounded-bl-full pointer-events-none" />
         </div>
