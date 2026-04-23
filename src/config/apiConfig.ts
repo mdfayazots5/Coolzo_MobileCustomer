@@ -8,7 +8,14 @@ export const FEATURE_FLAGS = {
   SHOW_SPECIAL_OFFERS: false,
 };
 
+function normalizeApiBaseUrl(rawValue?: string) {
+  const fallbackOrigin = 'http://localhost:5217';
+  const trimmed = (rawValue || fallbackOrigin).trim().replace(/\/+$/, '');
+
+  return trimmed.endsWith('/api/v1') ? trimmed : `${trimmed}/api/v1`;
+}
+
 export const API_CONFIG = {
-  BASE_URL: (import.meta as any).env?.VITE_API_BASE_URL || 'https://localhost:7001/api/v1',
+  BASE_URL: normalizeApiBaseUrl((import.meta as any).env?.VITE_API_BASE_URL),
   IS_MOCK: IS_MOCK,
 };
